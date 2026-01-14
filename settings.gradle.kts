@@ -21,3 +21,13 @@ dependencyResolutionManagement {
 
 rootProject.name = "LuxImmo"
 include(":app")
+include(":core")
+include(":core:data")
+include(":core:database")
+include(":core:common")
+include(":core:domain")
+include(":core:designsystem")
+include(":core:network")
+include(":feature")
+include(":feature:listings")
+include(":feature:detail")
