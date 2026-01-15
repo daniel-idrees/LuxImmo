@@ -17,7 +17,7 @@ val baseUrl: String = System.getenv(baseUrlKey) ?: Properties().apply {
 }.getProperty(baseUrlKey).orEmpty()
 
 android {
-    namespace = "com.example.luximmo.core.network.data"
+    namespace = "com.example.luximmo.core.network"
     buildFeatures {
         buildConfig = true
     }
@@ -41,6 +41,8 @@ kotlin {
 }
 
 dependencies {
+    implementation(project(":core:domain"))
+
     //hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
