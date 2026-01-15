@@ -1,7 +1,6 @@
 package com.example.network
 
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.TimeoutCancellationException
 
 /**
  *
