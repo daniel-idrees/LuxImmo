@@ -19,7 +19,7 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-internal class NetworkModule {
+class NetworkModule {
 
     @Provides
     @Singleton
