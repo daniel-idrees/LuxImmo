@@ -13,7 +13,7 @@ import javax.inject.Singleton
 /**
  * Retrofit API declaration for Gsl Network API
  */
-internal interface RetrofitGslNetworkApi {
+interface RetrofitGslNetworkApi {
     @GET("/listings.json")
     suspend fun getListings(): NetworkListingResponse
 
@@ -27,7 +27,7 @@ internal interface RetrofitGslNetworkApi {
  * [Retrofit] backed [GslNetworkDataSource]
  */
 @Singleton
-internal class RetrofitGslApiClient @Inject constructor(
+class RetrofitGslApiClient @Inject constructor(
     private val networkApi: RetrofitGslNetworkApi
 ) : GslNetworkDataSource {
 
