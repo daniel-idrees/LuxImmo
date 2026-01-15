@@ -9,18 +9,9 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
-val localProperties = Properties()
-val localPropertiesFile = rootProject.file("local.properties")
-if (localPropertiesFile.exists()) {
-    localPropertiesFile.inputStream().use { inputStream ->
-        localProperties.load(inputStream)
-    }
+configurations.all {
+    exclude(group = "com.intellij", module = "annotations")
 }
-
-val baseUrlKey = "BASE_URL"
-
-val baseUrl: String =
-    System.getenv(baseUrlKey) ?: localProperties.getProperty(baseUrlKey, "")
 
 android {
     namespace = "com.example.luximmo"
@@ -36,8 +27,6 @@ android {
         versionName = "0.0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-        buildConfigField("String", baseUrlKey, "\"${baseUrl}\"")
     }
 
     buildTypes {
@@ -68,19 +57,18 @@ kotlin {
 }
 
 dependencies {
+    implementation(project(":feature:listings"))
+    implementation(project(":feature:detail"))
+    implementation(project(":core:ui"))
+    implementation(project(":core:domain"))
+    implementation(project(":core:data"))
+    implementation(project(":core:database"))
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
 
     //splash
     implementation(libs.androidx.core.splashscreen)
-
-    //compose
-    implementation(libs.androidx.activity.compose)
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.compose.ui)
-    implementation(libs.androidx.compose.ui.graphics)
-    implementation(libs.androidx.compose.ui.tooling.preview)
-    implementation(libs.androidx.compose.material3)
 
     //hilt
     implementation(libs.hilt.android)
