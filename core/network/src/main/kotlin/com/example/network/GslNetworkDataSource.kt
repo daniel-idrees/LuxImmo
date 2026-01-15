@@ -6,7 +6,7 @@ import com.example.network.model.NetworkListingResponse
 /**
  * Interface representing network calls to the Gsl backend
  */
-internal interface GslNetworkDataSource {
+interface GslNetworkDataSource {
     suspend fun getListings(): NetworkListingResponse
     suspend fun getListing(id: Int): NetworkListing
 }
