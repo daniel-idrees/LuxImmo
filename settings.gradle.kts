@@ -28,6 +28,8 @@ include(":core:common")
 include(":core:domain")
 include(":core:designsystem")
 include(":core:network")
+include(":core:ui")
 include(":feature")
 include(":feature:listings")
 include(":feature:detail")
+
