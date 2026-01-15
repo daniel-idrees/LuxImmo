@@ -1,6 +1,7 @@
 package com.example.network.model
 
 import kotlinx.serialization.Serializable
+
 @OptIn(kotlinx.serialization.InternalSerializationApi::class)
 @Serializable
 data class NetworkListing (
@@ -16,4 +17,3 @@ data class NetworkListing (
     val rooms: Int? = null,
 )
 
-//TODO External model

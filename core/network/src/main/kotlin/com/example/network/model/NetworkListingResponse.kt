@@ -1,5 +1,6 @@
 package com.example.network.model
 
+import com.example.domain.model.Listing
 import kotlinx.serialization.Serializable
 
 @OptIn(kotlinx.serialization.InternalSerializationApi::class)
@@ -8,5 +9,3 @@ data class NetworkListingResponse(
     val items: List<NetworkListing>,
     val totalCount: Int
 )
-
-//TODO External model
