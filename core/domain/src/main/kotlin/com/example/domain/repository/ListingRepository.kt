@@ -10,5 +10,5 @@ interface ListingRepository {
     suspend fun getListing(listingId: Int): Flow<Listing?>
 
     suspend fun refreshListings(): Result
-    suspend fun refreshListingDetails(listingId: Int): com.example.domain.Result
+    suspend fun refreshListingDetails(listingId: Int): Result
 }
