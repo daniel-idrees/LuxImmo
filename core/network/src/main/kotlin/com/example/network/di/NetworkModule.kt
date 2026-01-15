@@ -1,6 +1,6 @@
 package com.example.network.di
 
-import com.example.luximmo.core.network.data.BuildConfig
+import com.example.luximmo.core.network.BuildConfig
 import com.example.network.GslNetworkDataSource
 import com.example.network.retrofit.RetrofitGslApiClient
 import com.example.network.retrofit.RetrofitGslNetworkApi
