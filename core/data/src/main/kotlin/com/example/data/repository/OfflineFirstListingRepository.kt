@@ -16,7 +16,7 @@ import java.io.IOException
 import javax.inject.Inject
 
 
-internal class OfflineFirstListingRepository @Inject constructor(
+class OfflineFirstListingRepository @Inject constructor(
     private val gslNetworkDataSource: GslNetworkDataSource,
     private val dao: ListingDao,
 ) : ListingRepository {
