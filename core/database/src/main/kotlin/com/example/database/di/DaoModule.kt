@@ -9,7 +9,7 @@ import dagger.hilt.components.SingletonComponent
 
 @Module
 @InstallIn(SingletonComponent::class)
-internal object DaoModule {
+object DaoModule {
     @Provides
     fun providesListingDao(
         database: LuxImmoDatabase
