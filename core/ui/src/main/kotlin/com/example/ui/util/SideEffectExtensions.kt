@@ -1,4 +1,4 @@
-package com.example.ui.helper
+package com.example.ui.util
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect

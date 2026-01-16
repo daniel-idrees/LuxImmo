@@ -16,7 +16,7 @@
  * Origin: https://github.com/eu-digital-identity-wallet/eudi-app-android-wallet-ui/blob/main/ui-logic/src/main/java/eu/europa/ec/uilogic/component/utils/LaunchEffect.kt
  */
 
-package com.example.ui.helper
+package com.example.ui.util
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect

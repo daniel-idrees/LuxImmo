@@ -1,4 +1,4 @@
-package com.example.ui.helper
+package com.example.designsystem.util
 
 const val SPACING_EXTRA_SMALL = 4
 const val SPACING_SMALL = 8

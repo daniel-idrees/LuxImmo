@@ -1,4 +1,4 @@
-package com.example.ui.helper
+package com.example.ui.util
 
 import java.text.NumberFormat
 import java.util.Locale
