@@ -2,7 +2,7 @@ package com.example.listings.models
 
 import com.example.core.ui.R
 import com.example.domain.model.Listing
-import com.example.ui.helper.toCurrency
+import com.example.ui.util.toCurrency
 import com.example.ui.models.DisplayDoubleValue
 import com.example.ui.models.DisplayIntValue
 import com.example.ui.resource.ResourceProvider
