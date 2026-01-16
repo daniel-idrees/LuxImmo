@@ -17,26 +17,18 @@ fun NetworkListing.asEntity() = ListingEntity(
     rooms = rooms,
     city = city,
     professional = professional,
+    offerType = offerType
 )
 
 fun ListingEntity.asExternalModel() = Listing(
     id = id,
-    price = formatPrice(price),
+    price = price,
     area = area,
     city = city,
-    rooms = rooms ?: 0 ,
-    bedrooms = bedrooms ?: 0 ,
+    rooms = rooms,
+    bedrooms = bedrooms,
     imageUrl = imageUrl,
     propertyType = PropertyType.fromString(propertyType),
-    vendor = professional
+    vendor = professional,
+    offerType = offerType
 )
-
-/**
- *  Formats the given price to France locale
- *  Example: 1500000 -> "1 500 000 €"
- */
-private fun formatPrice(price: Double): String {
-    return NumberFormat.getCurrencyInstance(Locale.FRANCE).apply {
-        maximumFractionDigits = 0
-    }.format(price)
-}
