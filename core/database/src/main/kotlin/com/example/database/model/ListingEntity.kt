@@ -18,6 +18,7 @@ data class ListingEntity(
     val rooms: Int?,
     val city: String,
     val professional: String,
+    val offerType: Int,
     @ColumnInfo(name = "last_updated")
     val lastUpdated: Long = System.currentTimeMillis()
 )
