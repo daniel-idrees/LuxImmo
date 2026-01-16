@@ -53,6 +53,10 @@ kotlin {
     compilerOptions {
         jvmTarget = JvmTarget.JVM_11
     }
+
+    sourceSets.all {
+        languageSettings.enableLanguageFeature("ExplicitBackingFields")
+    }
 }
 
 dependencies {
