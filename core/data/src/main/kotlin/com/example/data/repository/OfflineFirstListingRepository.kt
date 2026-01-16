@@ -26,7 +26,7 @@ class OfflineFirstListingRepository @Inject constructor(
             entities.map(ListingEntity::asExternalModel)
         }
 
-    override suspend fun getListing(listingId: Int): Flow<Listing?> = dao.getListingById(listingId)
+    override fun getListing(listingId: Int): Flow<Listing?> = dao.getListingById(listingId)
         .map { it?.asExternalModel() }
 
     override suspend fun refreshListings(): Result {
