@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -34,7 +36,6 @@ internal fun ListingDetailScreen(
 @Composable
 private fun MainContent(viewState: DetailUiState) {
 
-    val listing = viewState.listing ?: return
     if (viewState.isLoading) {
         Box(
             modifier = Modifier
@@ -43,7 +44,20 @@ private fun MainContent(viewState: DetailUiState) {
         ) {
             CircularProgressIndicator()
         }
+    } else if (viewState.error != null) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 8.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = viewState.error,
+                color = MaterialTheme.colorScheme.error
+            )
+        }
     } else {
+        val listing = viewState.listing ?: return
         Box(
             modifier = Modifier
                 .fillMaxSize()
