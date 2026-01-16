@@ -1,12 +1,10 @@
-package com.example.listings.ui
+package com.example.listings.ui.list
 
 import androidx.lifecycle.viewModelScope
 import com.example.domain.Result
 import com.example.domain.model.Listing
 import com.example.domain.usecase.GetListingsUseCase
 import com.example.listings.models.toListingUi
-import com.example.listings.ui.ListingUiEffect.NavigateToDetail
-import com.example.listings.ui.ListingUiEffect.ShowSnackbar
 import com.example.ui.mvi.MviViewModel
 import com.example.ui.resource.ResourceProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -48,7 +46,7 @@ internal class ListingViewModel @Inject constructor(
                     )
                 }
                 setEffect {
-                    NavigateToDetail(event.listing.id.toString())
+                    ListingUiEffect.NavigateToDetail(event.listing.id.toString())
                 }
             }
 
@@ -120,7 +118,7 @@ internal class ListingViewModel @Inject constructor(
                         }
                     } else {
                         setEffect {
-                            ShowSnackbar(
+                            ListingUiEffect.ShowSnackbar(
                                 message = "Something went wrong"
                             )
                         }
