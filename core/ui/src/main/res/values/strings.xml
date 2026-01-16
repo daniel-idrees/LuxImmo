@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <plurals name="listing_rooms_format">
+        <item quantity="one">%d room</item>
+        <item quantity="other">%d rooms</item>
+    </plurals>
+
+    <plurals name="listing_bedrooms_format">
+        <item quantity="one">%d bedroom</item>
+        <item quantity="other">%d bedrooms</item>
+    </plurals>
+
+    <string name="area_format">%1$s m²</string>
+
+    <string name="price_per_square_meter_format"> %1$s/m²</string>
+
+    <string name="sorting_option_default">Default</string>
+    <string name="sorting_option_price_asc">Price Ascending</string>
+    <string name="sorting_option_price_desc">Price Descending</string>
+    <string name="sorting_option_area">Area</string>
+
+</resources>
