@@ -2,6 +2,7 @@
 
 package com.example.listings.ui
 
+import android.annotation.SuppressLint
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -22,9 +23,10 @@ import com.example.listings.ui.detail.ListingDetailScreen
 import com.example.listings.ui.list.ListingScreen
 import com.example.listings.ui.list.ListingUiEffect
 import com.example.listings.ui.list.ListingViewModel
-import com.example.ui.helper.ObserveSideEffects
+import com.example.ui.util.ObserveSideEffects
 import kotlinx.coroutines.launch
 
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 internal fun AdaptiveListingsDetailPane(
     modifier: Modifier = Modifier,
