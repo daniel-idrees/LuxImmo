@@ -24,6 +24,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -39,7 +40,8 @@ abstract class MviViewModel<Action : ViewAction, UiState : ViewState, Effect : V
     private val _viewState: MutableStateFlow<UiState> by lazy { MutableStateFlow(initialState) }
     val viewState: StateFlow<UiState> by lazy { _viewState.asStateFlow() }
 
-    private val _action: MutableSharedFlow<Action> = MutableSharedFlow(extraBufferCapacity = 3)
+    private val action: SharedFlow<Action>
+        field = MutableSharedFlow(extraBufferCapacity = 3)
 
     private val _effect = Channel<Effect>(capacity = Channel.BUFFERED)
     val effect = _effect.receiveAsFlow()
@@ -49,7 +51,7 @@ abstract class MviViewModel<Action : ViewAction, UiState : ViewState, Effect : V
     }
 
     fun setAction(event: Action) {
-        viewModelScope.launch { _action.emit(event) }
+        viewModelScope.launch { action.emit(event) }
     }
 
     protected fun setState(reducer: UiState.() -> UiState) {
@@ -61,7 +63,7 @@ abstract class MviViewModel<Action : ViewAction, UiState : ViewState, Effect : V
 
     private fun subscribeToActions() {
         viewModelScope.launch {
-            _action.collect {
+            action.collect {
                 handleAction(it)
             }
         }
