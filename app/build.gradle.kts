@@ -1,5 +1,4 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -58,7 +57,6 @@ kotlin {
 
 dependencies {
     implementation(project(":feature:listings"))
-    implementation(project(":feature:detail"))
     implementation(project(":core:ui"))
     implementation(project(":core:domain"))
     implementation(project(":core:data"))
