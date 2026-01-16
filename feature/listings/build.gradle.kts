@@ -47,9 +47,6 @@ dependencies {
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
 
-    //coil
-    implementation(libs.coil3.compose)
-
     //testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
