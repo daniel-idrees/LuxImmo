@@ -1,4 +1,4 @@
-package com.example.listings
+package com.example.listings.navigation
 
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
