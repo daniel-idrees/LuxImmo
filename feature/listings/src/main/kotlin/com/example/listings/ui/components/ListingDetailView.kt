@@ -16,8 +16,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import com.example.listings.models.ListingUi
-import com.example.ui.helper.SPACING_MEDIUM
-import com.example.ui.helper.SPACING_SMALL
+import com.example.designsystem.util.SPACING_MEDIUM
+import com.example.designsystem.util.SPACING_SMALL
 
 @Composable
 internal fun ListingDetailView(
