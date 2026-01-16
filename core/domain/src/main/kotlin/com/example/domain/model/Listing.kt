@@ -2,19 +2,20 @@ package com.example.domain.model
 
 data class Listing (
     val id: Int,
-    val rooms: Int = 0,
-    val bedrooms: Int = 0,
+    val rooms: Int? = null,
+    val bedrooms: Int? = null,
     val city: String,
     val area: Double,
     val imageUrl: String? = null,
-    val price: String,
+    val price: Double,
     val vendor: String,
     val propertyType: PropertyType,
+    val offerType: Int
 )
 
-enum class PropertyType {
-    MAISON_VILLA,
-    OTHER;
+enum class PropertyType(val value: String) {
+    MAISON_VILLA("Maison - Villa"),
+    OTHER("Other");
 
     companion object {
         fun fromString(value: String?): PropertyType {
