@@ -1,4 +1,4 @@
-package com.example.listings.ui
+package com.example.listings.ui.list
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -24,8 +24,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.designsystem.theme.LuxImmoTheme
 import com.example.listings.models.ListingUi
+import com.example.listings.ui.list.ListingViewModel
 import com.example.listings.ui.components.ListingDetailView
 import com.example.listings.ui.components.SortingDropdownButton
+import com.example.ui.helper.OneTimeLaunchedEffect
 import com.example.ui.helper.SPACING_MEDIUM
 import com.example.ui.models.DisplayDoubleValue
 import com.example.ui.models.DisplayIntValue
@@ -37,8 +39,10 @@ internal fun ListingScreen(
 ) {
     val viewState by listingViewModel.viewState.collectAsStateWithLifecycle()
 
-    listingViewModel.setAction(ListingUiAction.Init)
-
+    OneTimeLaunchedEffect {
+        listingViewModel.setAction(ListingUiAction.Init)
+    }
+    
     if(!isDetailVisible) {
         listingViewModel.setAction(ListingUiAction.RemoveSelection)
     }
