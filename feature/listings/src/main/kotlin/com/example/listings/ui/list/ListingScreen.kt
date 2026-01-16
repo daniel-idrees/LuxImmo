@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -19,18 +20,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.core.ui.R
 import com.example.designsystem.theme.LuxImmoTheme
+import com.example.designsystem.util.SPACING_MEDIUM
 import com.example.listings.models.ListingUi
-import com.example.listings.ui.list.ListingViewModel
 import com.example.listings.ui.components.ListingDetailView
 import com.example.listings.ui.components.SortingDropdownButton
-import com.example.ui.helper.OneTimeLaunchedEffect
-import com.example.ui.helper.SPACING_MEDIUM
 import com.example.ui.models.DisplayDoubleValue
 import com.example.ui.models.DisplayIntValue
+import com.example.ui.util.OneTimeLaunchedEffect
 
 @Composable
 internal fun ListingScreen(
@@ -42,8 +46,8 @@ internal fun ListingScreen(
     OneTimeLaunchedEffect {
         listingViewModel.setAction(ListingUiAction.Init)
     }
-    
-    if(!isDetailVisible) {
+
+    if (!isDetailVisible) {
         listingViewModel.setAction(ListingUiAction.RemoveSelection)
     }
 
@@ -66,12 +70,26 @@ private fun MainContent(
         ) {
             CircularProgressIndicator()
         }
+    } else if (viewState.error != null) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 8.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = viewState.error,
+                color = MaterialTheme.colorScheme.error
+            )
+        }
     } else {
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(vertical = SPACING_MEDIUM.dp, horizontal = 8.dp)
         ) {
+            val itemCount = viewState.listings.size
+
             item {
                 Row(
                     modifier = Modifier
@@ -80,16 +98,26 @@ private fun MainContent(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    val headerText = if (itemCount > 0) pluralStringResource(
+                        R.plurals.listing_results_header,
+                        itemCount,
+                        itemCount
+                    ) else stringResource(R.string.no_results_found)
+
                     Text(
                         modifier = Modifier,
-                        text = "${viewState.listings.size} results found"
+                        text = headerText,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
 
-                    SortingDropdownButton(
-                        activeSort = viewState.activeSort,
-                        onSortSelected = { newSort->
-                            onAction(ListingUiAction.OnSortChange(newSort))
-                    })
+                    if (itemCount > 0) {
+                        SortingDropdownButton(
+                            activeSort = viewState.activeSort,
+                            onSortSelected = { newSort ->
+                                onAction(ListingUiAction.OnSortChange(newSort))
+                            })
+                    }
                 }
             }
             items(viewState.listings) { listing ->
@@ -114,6 +142,7 @@ private fun MainContent(
 }
 
 @Composable
+@PreviewLightDark
 @Preview(showBackground = true)
 private fun ListingPreview() {
     val list = listOf(
