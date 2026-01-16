@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
+    <plurals name="listing_results_header">
+        <item quantity="zero">%d result found</item>
+        <item quantity="one">%d result found</item>
+        <item quantity="other">%d results found</item>
+    </plurals>
+
     <plurals name="listing_rooms_format">
         <item quantity="one">%d room</item>
         <item quantity="other">%d rooms</item>
@@ -19,5 +25,11 @@
     <string name="sorting_option_price_asc">Price Ascending</string>
     <string name="sorting_option_price_desc">Price Descending</string>
     <string name="sorting_option_area">Area</string>
+
+
+    <!-- Error Messages -->
+
+    <string name="error_not_internet">Please check your internet connection</string>
+    <string name="error_unknown">Something went wrong ...</string>
 
 </resources>
