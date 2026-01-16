@@ -11,7 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.listings.models.ListingUi
-import com.example.ui.helper.SPACING_SMALL
+import com.example.designsystem.util.SPACING_SMALL
 
 @Composable
 internal fun ListingDetailContent(
