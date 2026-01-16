@@ -16,6 +16,9 @@ interface ListingDao {
     @Query("SELECT * FROM listings WHERE id = :id")
     fun getListingById(id: Int): Flow<ListingEntity?>
 
+    @Query("SELECT * FROM listings WHERE id = :id")
+    suspend fun getListingByIdOnce(id: Int): ListingEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertListing(listing: ListingEntity)
 
