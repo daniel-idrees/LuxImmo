@@ -4,6 +4,7 @@ import androidx.annotation.StringRes
 import androidx.compose.runtime.Immutable
 import com.example.core.ui.R
 import com.example.listings.models.ListingUi
+import com.example.ui.models.UiErrorConfig
 import com.example.ui.mvi.ViewState
 
 @Immutable
@@ -11,8 +12,9 @@ internal data class ListingUiState(
     val isLoading: Boolean = false,
     val listings: List<ListingUi> = emptyList(),
     val selectedListing: ListingUi? = null,
-    val error: String? = null,
-    val activeSort: ListingSortOption = ListingSortOption.Default
+    val errorConfig: UiErrorConfig? = null,
+    val activeSort: ListingSortOption = ListingSortOption.Default,
+    val isRefreshing: Boolean = false
 ) : ViewState
 
 
