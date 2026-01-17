@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalCoroutinesApi::class)
+
 package com.example.listings.ui.list
 
 import androidx.lifecycle.viewModelScope
@@ -6,15 +8,16 @@ import com.example.domain.Result
 import com.example.domain.model.Listing
 import com.example.domain.usecase.GetListingsUseCase
 import com.example.listings.models.toListingUi
+import com.example.ui.models.UiErrorConfig
 import com.example.ui.mvi.MviViewModel
 import com.example.ui.resource.ResourceProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -34,7 +37,6 @@ internal class ListingViewModel @Inject constructor(
             }
 
             ListingUiAction.Refresh -> {
-                setState { copy(isLoading = true) }
                 refreshData()
             }
 
@@ -68,9 +70,15 @@ internal class ListingViewModel @Inject constructor(
             getListingsUseCase.refreshResultEvent
                 .collectLatest {
                     when (it) {
-                        is Result.Error -> handleErrorForSilentSync(it)
+                        is Result.Error -> handleRefreshError(it)
                         is Result.Success -> {
                             // notify user that data is latest
+                            setState {
+                                copy(
+                                    isRefreshing = false,
+                                    isLoading = false
+                                )
+                            }
                         }
                     }
                 }
@@ -78,7 +86,6 @@ internal class ListingViewModel @Inject constructor(
     }
 
     private fun loadData() {
-
         val sortOptionFlow = viewState
             .mapLatest { it.activeSort }
             .distinctUntilChanged()
@@ -87,10 +94,9 @@ internal class ListingViewModel @Inject constructor(
             }
 
         viewModelScope.launch {
+            setState { copy(isLoading = true) }
+
             getListingsUseCase()
-                .onStart {
-                    setState { copy(isLoading = true) }
-                }
                 .distinctUntilChanged()
                 .combine(sortOptionFlow) { list, sortOption ->
                     val sortedList = list.sort(sortOption)
@@ -101,11 +107,14 @@ internal class ListingViewModel @Inject constructor(
                     }
                 }
                 .collect { list ->
-                    setState {
-                        copy(
-                            isLoading = false,
-                            listings = list
-                        )
+                    if (list.isNotEmpty()) {
+                        setState {
+                            copy(
+                                isLoading = false,
+                                errorConfig = null,
+                                listings = list
+                            )
+                        }
                     }
                 }
         }
@@ -124,67 +133,79 @@ internal class ListingViewModel @Inject constructor(
      */
     private fun refreshData() {
         viewModelScope.launch {
-            val result = getListingsUseCase.refresh()
-            when (result) {
-                is Result.Error -> handleErrorForManualSync(result)
-                Result.Success -> {
-                    setState { copy(isLoading = false) }
-                }
+            if (viewState.value.listings.isEmpty()) {
+                setState { copy(isLoading = true) }
+            } else {
+                setState { copy(isRefreshing = true) }
             }
+
+            getListingsUseCase.refresh()
         }
     }
 
-    private fun handleErrorForManualSync(error: Result.Error) {
+    private fun handleRefreshError(error: Result.Error) {
         when (error) {
-            Result.Error.NoInternetConnection -> handleNoInternetError()
-            Result.Error.Unknown -> {
+            is Result.Error.NoInternetConnection -> handleNoInternetError()
+
+            is Result.Error.Unknown -> {
                 if (viewState.value.listings.isEmpty()) {
                     setState {
                         copy(
-                            isLoading = false,
-                            error = resourceProvider.getString(R.string.error_unknown)
+                            errorConfig = UiErrorConfig(
+                                errorText = resourceProvider.getString(
+                                    R.string.error_unknown
+                                ),
+                                onRetry = {
+                                    refreshData()
+                                }
+                            )
                         )
                     }
-                } else {
+                } else  {
                     setEffect {
                         ListingUiEffect.ShowSnackbar(
                             message = resourceProvider.getString(R.string.error_unknown)
                         )
                     }
                 }
-            }
-        }
-    }
 
-    private fun handleErrorForSilentSync(error: Result.Error) {
-        when (error) {
-            is Result.Error.Unknown -> {
-                if (viewState.value.listings.isEmpty()) {
-                    setState {
-                        copy(
-                            error = resourceProvider.getString(R.string.error_unknown)
-                        )
-                    }
+                setState {
+                    copy(
+                        isLoading = false,
+                        isRefreshing = false,
+                    )
                 }
             }
-
-            is Result.Error.NoInternetConnection -> handleNoInternetError()
         }
     }
 
     private fun handleNoInternetError() {
-        setEffect {
-            ListingUiEffect.ShowSnackbar(
-                message = resourceProvider.getString(R.string.error_not_internet)
-            )
-        }
-
         if (viewState.value.listings.isEmpty()) {
             setState {
                 copy(
-                    error = resourceProvider.getString(R.string.error_not_internet)
+                    errorConfig = UiErrorConfig(
+                        errorText = resourceProvider.getString(
+                            R.string.error_not_internet
+                        ),
+                        onRetry = {
+                            refreshData()
+                        }
+                    )
                 )
             }
+        } else {
+            setEffect {
+                ListingUiEffect.ShowSnackbar(
+                    message = resourceProvider.getString(R.string.error_not_internet)
+                )
+            }
+        }
+
+        setState {
+            copy(
+                isLoading = false,
+                isRefreshing = false,
+            )
         }
     }
 }
