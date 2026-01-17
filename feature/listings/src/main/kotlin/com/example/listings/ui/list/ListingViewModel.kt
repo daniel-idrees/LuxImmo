@@ -4,7 +4,9 @@ package com.example.listings.ui.list
 
 import androidx.lifecycle.viewModelScope
 import com.example.core.ui.R
+import com.example.domain.AppError
 import com.example.domain.Result
+import com.example.domain.exception.ListingsUnavailableException
 import com.example.domain.model.Listing
 import com.example.domain.usecase.GetListingsUseCase
 import com.example.listings.models.toListingUi
@@ -12,29 +14,37 @@ import com.example.ui.models.UiErrorConfig
 import com.example.ui.mvi.MviViewModel
 import com.example.ui.resource.ResourceProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 internal class ListingViewModel @Inject constructor(
     private val resourceProvider: ResourceProvider,
-    private val getListingsUseCase: GetListingsUseCase
+    private val getListingsUseCase: GetListingsUseCase,
+    //private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) : MviViewModel<ListingUiAction, ListingUiState, ListingUiEffect>() {
+
+    private val sortOptionFlow = viewState
+        .mapLatest { it.activeSort }
+        .distinctUntilChanged()
+        .onEach {
+            setState { copy(isLoading = true) }
+        }
 
     override fun setInitialState(): ListingUiState = ListingUiState()
 
     override fun handleAction(event: ListingUiAction) {
         when (event) {
             ListingUiAction.Init -> {
-                observeRefreshResult()
                 loadData()
             }
 
@@ -49,7 +59,7 @@ internal class ListingViewModel @Inject constructor(
                     )
                 }
                 setEffect {
-                    ListingUiEffect.NavigateToDetail(event.listing.id.toString())
+                    ListingUiEffect.NavigateToDetail(event.listing.id)
                 }
             }
 
@@ -67,39 +77,19 @@ internal class ListingViewModel @Inject constructor(
         }
     }
 
-    private fun observeRefreshResult() {
-        viewModelScope.launch {
-            getListingsUseCase.refreshResultEvent
-                .collectLatest {
-                    when (it) {
-                        is Result.Error -> handleRefreshError(it)
-                        is Result.Success -> {
-                            // notify user that data is latest
-                            setState {
-                                copy(
-                                    isRefreshing = false,
-                                    isLoading = false
-                                )
-                            }
-                        }
-                    }
-                }
-        }
-    }
-
     private fun loadData() {
-        val sortOptionFlow = viewState
-            .mapLatest { it.activeSort }
-            .distinctUntilChanged()
-            .onEach {
-                setState { copy(isLoading = true) }
-            }
-
         viewModelScope.launch {
             setState { copy(isLoading = true) }
 
             getListingsUseCase()
                 .distinctUntilChanged()
+                .catch {
+                    if (it is ListingsUnavailableException) {
+                        handleError(it.errorResult)
+                    } else {
+                        handleUnknownError()
+                    }
+                }
                 .combine(sortOptionFlow) { list, sortOption ->
                     val sortedList = list.sort(sortOption)
                     sortedList.map {
@@ -108,15 +98,14 @@ internal class ListingViewModel @Inject constructor(
                         )
                     }
                 }
+                .flowOn(Dispatchers.Default) //for sorting
                 .collect { list ->
-                    if (list.isNotEmpty()) {
-                        setState {
-                            copy(
-                                isLoading = false,
-                                errorConfig = null,
-                                listings = list
-                            )
-                        }
+                    setState {
+                        copy(
+                            isLoading = false,
+                            errorConfig = null,
+                            listings = list
+                        )
                     }
                 }
         }
@@ -135,54 +124,46 @@ internal class ListingViewModel @Inject constructor(
      */
     private fun refreshData() {
         viewModelScope.launch {
-            if (viewState.value.listings.isEmpty()) {
+            //If no data available, show big loader else only keep refresher indicator
+            if (viewState.value.listings == null) {
                 setState { copy(isLoading = true) }
             } else {
                 setState { copy(isRefreshing = true) }
             }
 
-            getListingsUseCase.refresh()
-        }
-    }
+            val result = getListingsUseCase.refresh()
 
-    private fun handleRefreshError(error: Result.Error) {
-        when (error) {
-            is Result.Error.NoInternetConnection -> handleNoInternetError()
-
-            is Result.Error.Unknown -> {
-                if (viewState.value.listings.isEmpty()) {
+            when (result) {
+                is Result.Error -> handleError(result)
+                is Result.Success -> {
                     setState {
                         copy(
-                            errorConfig = UiErrorConfig(
-                                errorText = resourceProvider.getString(
-                                    R.string.error_unknown
-                                ),
-                                onRetry = {
-                                    refreshData()
-                                }
-                            )
+                            isRefreshing = false,
+                            isLoading = false
                         )
                     }
-                } else  {
-                    setEffect {
-                        ListingUiEffect.ShowSnackbar(
-                            message = resourceProvider.getString(R.string.error_unknown)
-                        )
-                    }
-                }
-
-                setState {
-                    copy(
-                        isLoading = false,
-                        isRefreshing = false,
-                    )
                 }
             }
         }
     }
 
+    private fun handleError(errorResult: Result.Error) {
+        when (errorResult.error) {
+            is AppError.NoInternetConnection -> handleNoInternetError()
+            is AppError.Unknown -> handleUnknownError()
+        }
+
+        setState {
+            copy(
+                isLoading = false,
+                isRefreshing = false,
+            )
+        }
+    }
+
     private fun handleNoInternetError() {
-        if (viewState.value.listings.isEmpty()) {
+        val currentListing = viewState.value.listings
+        if (currentListing == null || currentListing.isEmpty()) {
             setState {
                 copy(
                     errorConfig = UiErrorConfig(
@@ -202,12 +183,28 @@ internal class ListingViewModel @Inject constructor(
                 )
             }
         }
-
-        setState {
-            copy(
-                isLoading = false,
-                isRefreshing = false,
-            )
+    }
+    private fun handleUnknownError(){
+        val currentListing = viewState.value.listings
+        if (currentListing == null || currentListing.isEmpty()) {
+            setState {
+                copy(
+                    errorConfig = UiErrorConfig(
+                        errorText = resourceProvider.getString(
+                            R.string.error_unknown
+                        ),
+                        onRetry = {
+                            refreshData()
+                        }
+                    )
+                )
+            }
+        } else {
+            setEffect {
+                ListingUiEffect.ShowSnackbar(
+                    message = resourceProvider.getString(R.string.error_unknown)
+                )
+            }
         }
     }
 }
