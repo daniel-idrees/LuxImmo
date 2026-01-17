@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,15 +36,13 @@ fun GenericErrorView(
                 text = errorText,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            LuxImmoIcon(
-                luxImmoIcon = LuxImmoIcons.Refresh,
-                modifier = Modifier
-                    .clickable {
-                        onRetry()
-                    },
-                size = ICON_SIZE_LARGE,
-                tint = MaterialTheme.colorScheme.onSurface
-            )
+            IconButton(onClick = { onRetry()} ) {
+                LuxImmoIcon(
+                    luxImmoIcon = LuxImmoIcons.Refresh,
+                    size = ICON_SIZE_LARGE,
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+            }
         }
     }
 }
