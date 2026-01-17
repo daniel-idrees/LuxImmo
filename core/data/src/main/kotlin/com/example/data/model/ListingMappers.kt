@@ -4,8 +4,6 @@ import com.example.database.model.ListingEntity
 import com.example.domain.model.Listing
 import com.example.domain.model.PropertyType
 import com.example.network.model.NetworkListing
-import java.text.NumberFormat
-import java.util.Locale
 
 internal fun NetworkListing.asEntity() = ListingEntity(
     id = id,
