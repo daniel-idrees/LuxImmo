@@ -16,7 +16,7 @@ internal fun VendorBannerView(vendor: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface),
+            .background(MaterialTheme.colorScheme.surfaceDim),
     ) {
         Text(
             modifier = Modifier.padding(horizontal = SPACING_MEDIUM.dp),
