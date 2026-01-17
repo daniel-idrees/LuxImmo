@@ -10,6 +10,4 @@ class GetListingsUseCase @Inject constructor(
     operator fun invoke() = listingsRepository.observeListings()
 
     suspend fun refresh() = listingsRepository.refreshListings()
-
-    val refreshResultEvent = listingsRepository.listingsRefreshStatus
 }
