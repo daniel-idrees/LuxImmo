@@ -31,18 +31,24 @@ import kotlinx.coroutines.launch
 internal fun AdaptiveListingsDetailPane(
     modifier: Modifier = Modifier,
 ) {
-    val viewModel : ListingViewModel = hiltViewModel()
+    val listingViewModel: ListingViewModel = hiltViewModel()
+
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val navigator = rememberListDetailPaneScaffoldNavigator<String>()
 
-    val isDetailVisible by remember (navigator.currentDestination) {
+    val isDetailVisible by remember(navigator.currentDestination) {
         derivedStateOf {
             navigator.currentDestination?.pane == ListDetailPaneScaffoldRole.Detail
         }
     }
 
-    ObserveSideEffects(effect = viewModel.effect) { effect ->
+    suspend fun showSnackbar(message: String) {
+        snackbarHostState.currentSnackbarData?.dismiss()
+        snackbarHostState.showSnackbar(message)
+    }
+
+    ObserveSideEffects(effect = listingViewModel.effect) { effect ->
         when (effect) {
             is ListingUiEffect.NavigateToDetail -> {
                 scope.launch {
@@ -53,11 +59,7 @@ internal fun AdaptiveListingsDetailPane(
                 }
             }
 
-            is ListingUiEffect.ShowSnackbar -> {
-                scope.launch {
-                    snackbarHostState.showSnackbar(effect.message)
-                }
-            }
+            is ListingUiEffect.ShowSnackbar -> scope.launch { showSnackbar(effect.message) }
         }
     }
 
@@ -68,7 +70,7 @@ internal fun AdaptiveListingsDetailPane(
             listPane = {
                 AnimatedPane {
                     ListingScreen(
-                        listingViewModel = viewModel,
+                        listingViewModel = listingViewModel,
                         isDetailVisible = isDetailVisible,
                     )
                 }
@@ -76,6 +78,7 @@ internal fun AdaptiveListingsDetailPane(
             detailPane = {
                 val selectedId = navigator.currentDestination?.contentKey
                 if (selectedId != null) {
+
                     AnimatedPane {
                         ListingDetailScreen(
                             viewModel = hiltViewModel<DetailViewModel, DetailViewModel.Factory>(
@@ -83,6 +86,16 @@ internal fun AdaptiveListingsDetailPane(
                             ) { factory ->
                                 factory.create(selectedId)
                             },
+                            onErrorAction = { errorText ->
+                                // move back to list in case of error
+
+                                scope.launch {
+                                    navigator.navigateTo(
+                                        pane = ListDetailPaneScaffoldRole.List
+                                    )
+                                    showSnackbar(errorText)
+                                }
+                            }
                         )
                     }
                 }
