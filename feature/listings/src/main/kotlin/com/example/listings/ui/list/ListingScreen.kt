@@ -3,7 +3,6 @@ package com.example.listings.ui.list
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,6 +13,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -22,8 +22,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.core.ui.R
@@ -31,9 +29,12 @@ import com.example.designsystem.theme.LuxImmoTheme
 import com.example.designsystem.util.SPACING_MEDIUM
 import com.example.listings.models.ListingUi
 import com.example.listings.ui.components.ListingDetailView
+import com.example.listings.ui.components.MainContentView
 import com.example.listings.ui.components.SortingDropdownButton
 import com.example.ui.models.DisplayDoubleValue
 import com.example.ui.models.DisplayIntValue
+import com.example.ui.models.UiErrorConfig
+import com.example.ui.util.DevicePreviews
 import com.example.ui.util.OneTimeLaunchedEffect
 
 @Composable
@@ -62,88 +63,81 @@ private fun MainContent(
     viewState: ListingUiState,
     onAction: (ListingUiAction) -> Unit
 ) {
-    if (viewState.isLoading) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator()
-        }
-    } else if (viewState.error != null) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 8.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = viewState.error,
-                color = MaterialTheme.colorScheme.error
-            )
-        }
-    } else {
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(vertical = SPACING_MEDIUM.dp, horizontal = 8.dp)
-        ) {
-            val itemCount = viewState.listings.size
 
-            item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = SPACING_MEDIUM.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    val headerText = if (itemCount > 0) pluralStringResource(
-                        R.plurals.listing_results_header,
-                        itemCount,
-                        itemCount
-                    ) else stringResource(R.string.no_results_found)
+    MainContentView(
+        isLoading = viewState.isLoading,
+        errorConfig = viewState.errorConfig,
+    ) {
+        PullToRefreshBox(
+            isRefreshing = viewState.isRefreshing,
+            onRefresh = { onAction(ListingUiAction.Refresh) },
+            modifier = Modifier.fillMaxSize()
+        ) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(vertical = SPACING_MEDIUM.dp, horizontal = 8.dp)
+            ) {
+                val itemCount = viewState.listings.size
 
-                    Text(
-                        modifier = Modifier,
-                        text = headerText,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                item {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = SPACING_MEDIUM.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
 
-                    if (itemCount > 0) {
-                        SortingDropdownButton(
-                            activeSort = viewState.activeSort,
-                            onSortSelected = { newSort ->
-                                onAction(ListingUiAction.OnSortChange(newSort))
-                            })
+                        if (!viewState.isRefreshing) {
+                            val headerText = if (itemCount > 0) pluralStringResource(
+                                R.plurals.listing_results_header,
+                                itemCount,
+                                itemCount
+                            ) else stringResource(R.string.no_results_found)
+
+                            Text(
+                                modifier = Modifier,
+                                text = headerText,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+
+
+                            if (itemCount > 0) {
+                                SortingDropdownButton(
+                                    activeSort = viewState.activeSort,
+                                    onSortSelected = { newSort ->
+                                        onAction(ListingUiAction.OnSortChange(newSort))
+                                    })
+                            }
+                        }
                     }
                 }
-            }
-            items(viewState.listings) { listing ->
-                ListingDetailView(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Color.Transparent)
-                        .padding(bottom = SPACING_MEDIUM.dp)
-                        .clickable {
-                            onAction(ListingUiAction.OnListingClick(listing))
-                        },
-                    imageModifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(16f / 9f),
-                    listing = listing,
-                    imageContentScale = ContentScale.FillWidth,
-                    isSelected = listing.id == viewState.selectedListing?.id
-                )
+                items(viewState.listings) { listing ->
+                    ListingDetailView(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color.Transparent)
+                            .padding(bottom = SPACING_MEDIUM.dp)
+                            .clickable {
+                                onAction(ListingUiAction.OnListingClick(listing))
+                            },
+                        imageModifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(16f / 9f),
+                        listing = listing,
+                        imageContentScale = ContentScale.FillWidth,
+                        isSelected = listing.id == viewState.selectedListing?.id
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-@PreviewLightDark
-@Preview(showBackground = true)
+@DevicePreviews
 private fun ListingPreview() {
     val list = listOf(
         ListingUi(
@@ -170,6 +164,18 @@ private fun ListingPreview() {
         )
     )
     val viewState = ListingUiState(listings = list) //TODO preview parameter
+    LuxImmoTheme {
+        MainContent(viewState, onAction = {})
+    }
+}
+
+@Composable
+@DevicePreviews
+private fun ListingErrorPreview() {
+    val viewState = ListingUiState(
+        errorConfig = UiErrorConfig(errorText = "Something went wrong", {})
+    )
+
     LuxImmoTheme {
         MainContent(viewState, onAction = {})
     }
