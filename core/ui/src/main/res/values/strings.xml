@@ -26,6 +26,8 @@
     <string name="sorting_option_price_desc">Price Descending</string>
     <string name="sorting_option_area">Area</string>
 
+    <string name="detail_no_selection">Select a listing"</string>
+
 
     <!-- Error Messages -->
 
