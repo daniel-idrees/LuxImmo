@@ -13,7 +13,7 @@ import javax.inject.Singleton
 abstract class DataModule {
     @Binds
     @Singleton
-    abstract fun bindsListingRepository(
+    internal abstract fun bindsListingRepository(
         listingRepository: OfflineFirstListingRepository,
     ): ListingRepository
 }
