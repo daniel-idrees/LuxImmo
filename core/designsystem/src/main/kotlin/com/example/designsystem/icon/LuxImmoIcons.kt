@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.South
 import androidx.compose.material3.Icon
@@ -21,8 +22,8 @@ sealed class LuxImmoIcons(val imageVector: ImageVector, val contentDescription: 
     data object DownArrow : LuxImmoIcons(Icons.Default.South, "Down arrow icon for sort")
     data object Sort : LuxImmoIcons(Icons.AutoMirrored.Filled.Sort, "sort icon")
     data object Refresh : LuxImmoIcons(Icons.Default.Refresh, "Refresh icon on error")
-
     data object BackArrow : LuxImmoIcons(Icons.AutoMirrored.Filled.ArrowBack, "Back arrow icon")
+    data object Close : LuxImmoIcons(Icons.Default.Close, "Close icon")
 }
 
 @Composable
