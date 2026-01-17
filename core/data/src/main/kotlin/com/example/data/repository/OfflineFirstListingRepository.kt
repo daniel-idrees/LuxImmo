@@ -6,15 +6,14 @@ import com.example.database.dao.ListingDao
 import com.example.database.model.ListingEntity
 import com.example.domain.Result
 import com.example.domain.exception.ListingDetailUnavailableException
+import com.example.domain.exception.ListingsUnavailableException
 import com.example.domain.model.Listing
 import com.example.domain.repository.ListingRepository
 import com.example.network.GslNetworkDataSource
 import com.example.network.model.NetworkListing
 import com.example.network.runSuspendCatching
 import com.example.network.toErrorResult
-import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.transform
@@ -25,18 +24,12 @@ internal class OfflineFirstListingRepository @Inject constructor(
     private val dao: ListingDao,
 ) : ListingRepository {
 
-    /**
-     *
-     */
-    override val listingsRefreshStatus: Flow<Result>
-        field = MutableSharedFlow<Result>(
-            replay = 1,
-            onBufferOverflow = BufferOverflow.DROP_OLDEST
-        )
-
     override fun observeListings(): Flow<List<Listing>> = dao.getAllListings()
         .onStart {
-            refreshListings()
+            val result = refreshListings()
+            if (result is Result.Error) {
+                throw ListingsUnavailableException(result)
+            }
         }
         .map { entities ->
             entities.map(ListingEntity::asExternalModel)
@@ -55,30 +48,32 @@ internal class OfflineFirstListingRepository @Inject constructor(
         }
         .map { it.asExternalModel() }
 
-    override suspend fun refreshListings() {
+    override suspend fun refreshListings(): Result<List<Listing>> {
         runSuspendCatching {
             gslNetworkDataSource.getListings()
         }.fold(
             onSuccess = { networkListings ->
-                dao.replaceListings(
-                    networkListings.items.map(NetworkListing::asEntity)
-                )
-                listingsRefreshStatus.emit(Result.Success)
+                val entities = networkListings.items.map(NetworkListing::asEntity)
+                dao.replaceListings(entities)
+
+                val listing = entities.map(ListingEntity::asExternalModel)
+                return Result.Success(listing)
             },
             onFailure = {
                 val errorResult = it.toErrorResult()
-                listingsRefreshStatus.emit(errorResult)
+                return errorResult
             }
         )
     }
 
-    private suspend fun refreshListingDetails(listingId: Int): Result {
+    private suspend fun refreshListingDetails(listingId: Int): Result<ListingEntity> {
         runSuspendCatching {
             gslNetworkDataSource.getListing(listingId)
         }.fold(
             onSuccess = { networkListing ->
-                dao.upsertListing(networkListing.asEntity())
-                return Result.Success
+                val entity = networkListing.asEntity()
+                dao.upsertListing(entity)
+                return Result.Success(entity)
             },
             onFailure = {
                 return it.toErrorResult()
