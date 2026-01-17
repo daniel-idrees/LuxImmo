@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -20,26 +21,29 @@ import com.example.designsystem.util.SPACING_SMALL
 import com.example.listings.models.ListingUi
 import com.example.listings.ui.components.ListingDetailView
 import com.example.ui.components.LoadingView
+import com.example.ui.components.SimpleAppBar
 import com.example.ui.models.DisplayDoubleValue
 import com.example.ui.models.DisplayIntValue
 import com.example.ui.util.DevicePreviews
-import com.example.ui.util.ObserveSideEffects
 
 @Composable
 internal fun ListingDetailScreen(
     viewModel: DetailViewModel = hiltViewModel(),
+    onBackAction: () -> Unit,
     onErrorAction: (String) -> Unit,
 ) {
     val viewState by viewModel.viewState.collectAsStateWithLifecycle()
 
     viewState.error?.let {
         onErrorAction(it)
-    } ?: MainContent(viewState = viewState)
-
+    } ?: MainContent(viewState = viewState, onBackAction = onBackAction)
 }
 
 @Composable
-private fun MainContent(viewState: DetailUiState) {
+private fun MainContent(
+    viewState: DetailUiState,
+    onBackAction: () -> Unit
+) {
 
     when {
         viewState.isLoading -> {
@@ -50,22 +54,33 @@ private fun MainContent(viewState: DetailUiState) {
 
         else -> {
             viewState.listing?.let { listing ->
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = SPACING_SMALL.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    ListingDetailView(
+                Scaffold(
+                    modifier = Modifier.fillMaxSize(),
+
+                    topBar = {
+                        SimpleAppBar(
+                            onBackClick = onBackAction
+                        )
+                    }
+                ) { innerPadding ->
+                    Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color.Transparent),
-                        imageModifier = Modifier
-                            .fillMaxWidth()
-                            .height(400.dp),
-                        listing = listing,
-                        imageContentScale = ContentScale.FillBounds
-                    )
+                            .fillMaxSize()
+                            .padding(innerPadding)
+                            .padding(horizontal = SPACING_SMALL.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        ListingDetailView(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color.Transparent),
+                            imageModifier = Modifier
+                                .fillMaxWidth()
+                                .height(400.dp),
+                            listing = listing,
+                            imageContentScale = ContentScale.FillBounds
+                        )
+                    }
                 }
             }
         }
@@ -89,6 +104,6 @@ private fun ListingDetailPreview() {
     )
     val viewState = DetailUiState(listing = listing)
     LuxImmoTheme {
-        MainContent(viewState = viewState)
+        MainContent(viewState = viewState, onBackAction = {})
     }
 }

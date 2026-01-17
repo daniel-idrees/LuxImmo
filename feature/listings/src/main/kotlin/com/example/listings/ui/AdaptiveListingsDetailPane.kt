@@ -43,9 +43,11 @@ internal fun AdaptiveListingsDetailPane(
         }
     }
 
-    suspend fun showSnackbar(message: String) {
-        snackbarHostState.currentSnackbarData?.dismiss()
-        snackbarHostState.showSnackbar(message)
+    fun showSnackbar(message: String) {
+        scope.launch {
+            snackbarHostState.currentSnackbarData?.dismiss()
+            snackbarHostState.showSnackbar(message)
+        }
     }
 
     ObserveSideEffects(effect = listingViewModel.effect) { effect ->
@@ -59,7 +61,7 @@ internal fun AdaptiveListingsDetailPane(
                 }
             }
 
-            is ListingUiEffect.ShowSnackbar -> scope.launch { showSnackbar(effect.message) }
+            is ListingUiEffect.ShowSnackbar -> showSnackbar(effect.message)
         }
     }
 
@@ -87,13 +89,13 @@ internal fun AdaptiveListingsDetailPane(
                                 factory.create(selectedId)
                             },
                             onErrorAction = { errorText ->
-                                // move back to list in case of error
-
+                                showSnackbar(errorText)
+                            },
+                            onBackAction = {
                                 scope.launch {
                                     navigator.navigateTo(
                                         pane = ListDetailPaneScaffoldRole.List
                                     )
-                                    showSnackbar(errorText)
                                 }
                             }
                         )
