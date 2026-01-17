@@ -10,7 +10,7 @@ import com.example.ui.mvi.ViewState
 @Immutable
 internal data class ListingUiState(
     val isLoading: Boolean = false,
-    val listings: List<ListingUi> = emptyList(),
+    val listings: List<ListingUi>? = null,
     val selectedListing: ListingUi? = null,
     val errorConfig: UiErrorConfig? = null,
     val activeSort: ListingSortOption = ListingSortOption.Default,
