@@ -2,4 +2,4 @@ package com.example.domain.exception
 
 import com.example.domain.Result
 
-class ListingDetailUnavailableException(val error: Result.Error) : Exception()
+class ListingDetailUnavailableException(val errorResult: Result.Error) : Exception()
