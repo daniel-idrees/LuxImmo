@@ -5,32 +5,36 @@ import com.example.data.model.asExternalModel
 import com.example.database.dao.ListingDao
 import com.example.database.model.ListingEntity
 import com.example.domain.Result
+import com.example.domain.exception.ListingDetailUnavailableException
 import com.example.domain.model.Listing
 import com.example.domain.repository.ListingRepository
 import com.example.network.GslNetworkDataSource
 import com.example.network.model.NetworkListing
 import com.example.network.runSuspendCatching
+import com.example.network.toErrorResult
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
-import java.io.IOException
+import kotlinx.coroutines.flow.transform
 import javax.inject.Inject
 
-
-class OfflineFirstListingRepository @Inject constructor(
+internal class OfflineFirstListingRepository @Inject constructor(
     private val gslNetworkDataSource: GslNetworkDataSource,
     private val dao: ListingDao,
 ) : ListingRepository {
 
-    override val refreshListResultEvent : SharedFlow<Result>
+    /**
+     *
+     */
+    override val listingsRefreshStatus: Flow<Result>
         field = MutableSharedFlow<Result>(
-            replay = 0,
-            extraBufferCapacity = 1
+            replay = 1,
+            onBufferOverflow = BufferOverflow.DROP_OLDEST
         )
 
-    override val listings: Flow<List<Listing>> = dao.getAllListings()
+    override fun observeListings(): Flow<List<Listing>> = dao.getAllListings()
         .onStart {
             refreshListings()
         }
@@ -38,17 +42,20 @@ class OfflineFirstListingRepository @Inject constructor(
             entities.map(ListingEntity::asExternalModel)
         }
 
-    override fun getListing(listingId: Int): Flow<Listing?> = dao.getListingById(listingId)
-        .onStart {
-            val listing = dao.getListingByIdOnce(listingId)
-            if (listing == null) {
-                refreshListingDetails(listingId)
+    override fun getListing(listingId: Int): Flow<Listing> = dao.getListingById(listingId)
+        .transform { entity ->
+            if (entity == null) {
+                val result = refreshListingDetails(listingId)
+                if (result is Result.Error) {
+                    throw ListingDetailUnavailableException(result)
+                }
+            } else {
+                emit(entity)
             }
         }
-        .map { it?.asExternalModel() }
+        .map { it.asExternalModel() }
 
-
-    override suspend fun refreshListings(): Result {
+    override suspend fun refreshListings() {
         runSuspendCatching {
             gslNetworkDataSource.getListings()
         }.fold(
@@ -56,6 +63,21 @@ class OfflineFirstListingRepository @Inject constructor(
                 dao.replaceListings(
                     networkListings.items.map(NetworkListing::asEntity)
                 )
+                listingsRefreshStatus.emit(Result.Success)
+            },
+            onFailure = {
+                val errorResult = it.toErrorResult()
+                listingsRefreshStatus.emit(errorResult)
+            }
+        )
+    }
+
+    private suspend fun refreshListingDetails(listingId: Int): Result {
+        runSuspendCatching {
+            gslNetworkDataSource.getListing(listingId)
+        }.fold(
+            onSuccess = { networkListing ->
+                dao.upsertListing(networkListing.asEntity())
                 return Result.Success
             },
             onFailure = {
@@ -63,27 +85,4 @@ class OfflineFirstListingRepository @Inject constructor(
             }
         )
     }
-
-    override suspend fun refreshListingDetails(listingId: Int): Result {
-        runSuspendCatching {
-            gslNetworkDataSource.getListing(listingId)
-        }.fold(
-            onSuccess = { networkListing ->
-                dao.upsertListing(networkListing.asEntity())
-                refreshListResultEvent.emit(Result.Success)
-                return Result.Success
-            },
-            onFailure = {
-                val errorResult = it.toErrorResult()
-                refreshListResultEvent.emit(errorResult)
-                return errorResult
-            }
-        )
-    }
 }
-
-private fun Throwable.toErrorResult(): Result =
-    when (this) {
-        is IOException -> Result.Error.NoInternetConnection
-        else -> Result.Error.Unknown
-    }
