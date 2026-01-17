@@ -7,7 +7,7 @@ import com.example.network.model.NetworkListing
 import java.text.NumberFormat
 import java.util.Locale
 
-fun NetworkListing.asEntity() = ListingEntity(
+internal fun NetworkListing.asEntity() = ListingEntity(
     id = id,
     price = price,
     area = area,
@@ -20,7 +20,7 @@ fun NetworkListing.asEntity() = ListingEntity(
     offerType = offerType
 )
 
-fun ListingEntity.asExternalModel() = Listing(
+internal fun ListingEntity.asExternalModel() = Listing(
     id = id,
     price = price,
     area = area,
