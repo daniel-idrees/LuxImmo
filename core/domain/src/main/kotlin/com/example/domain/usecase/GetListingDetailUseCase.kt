@@ -7,5 +7,4 @@ class GetListingDetailUseCase @Inject constructor(
     private val listingsRepository: ListingRepository
 ) {
     operator fun invoke(listingId: Int) = listingsRepository.getListing(listingId)
-
 }
