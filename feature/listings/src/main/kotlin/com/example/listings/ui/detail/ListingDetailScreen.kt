@@ -6,81 +6,75 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.designsystem.theme.LuxImmoTheme
+import com.example.designsystem.util.SPACING_SMALL
 import com.example.listings.models.ListingUi
 import com.example.listings.ui.components.ListingDetailView
+import com.example.ui.components.LoadingView
 import com.example.ui.models.DisplayDoubleValue
 import com.example.ui.models.DisplayIntValue
+import com.example.ui.util.DevicePreviews
+import com.example.ui.util.ObserveSideEffects
 
 @Composable
 internal fun ListingDetailScreen(
-    viewModel: DetailViewModel = hiltViewModel()
+    viewModel: DetailViewModel = hiltViewModel(),
+    onErrorAction: (String) -> Unit,
 ) {
     val viewState by viewModel.viewState.collectAsStateWithLifecycle()
-    MainContent(viewState = viewState)
+
+    viewState.error?.let {
+        onErrorAction(it)
+    } ?: MainContent(viewState = viewState)
+
 }
 
 @Composable
 private fun MainContent(viewState: DetailUiState) {
 
-    if (viewState.isLoading) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator()
-        }
-    } else if (viewState.error != null) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 8.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = viewState.error,
-                color = MaterialTheme.colorScheme.error
+    when {
+        viewState.isLoading -> {
+            LoadingView(
+                modifier = Modifier.fillMaxSize()
             )
         }
-    } else {
-        val listing = viewState.listing ?: return
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 8.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            ListingDetailView(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(Color.Transparent),
-                imageModifier = Modifier
-                    .fillMaxWidth()
-                    .height(400.dp),
-                listing = listing,
-                imageContentScale = ContentScale.FillBounds
-            )
+
+        else -> {
+            viewState.listing?.let { listing ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = SPACING_SMALL.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    ListingDetailView(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color.Transparent),
+                        imageModifier = Modifier
+                            .fillMaxWidth()
+                            .height(400.dp),
+                        listing = listing,
+                        imageContentScale = ContentScale.FillBounds
+                    )
+                }
+            }
         }
     }
 }
 
 
 @Composable
-@PreviewLightDark
+@DevicePreviews
 private fun ListingDetailPreview() {
     val listing = ListingUi(
         id = 1,
