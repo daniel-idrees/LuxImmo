@@ -32,6 +32,7 @@ import com.example.listings.ui.list.ListingSortOption
 @Composable
 internal fun SortingDropdownButton(
     activeSort: ListingSortOption,
+    enabled: Boolean = true,
     onSortSelected: (ListingSortOption) -> Unit
 ) {
 
@@ -39,6 +40,7 @@ internal fun SortingDropdownButton(
 
     Box(modifier = Modifier.wrapContentSize(Alignment.TopStart)) {
         OutlinedButton(
+            enabled = enabled,
             onClick = { expanded = true },
             shape = CircleShape,
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface),
