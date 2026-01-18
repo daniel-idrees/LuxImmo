@@ -19,55 +19,46 @@ import com.example.designsystem.theme.LuxImmoTheme
 import com.example.designsystem.util.SPACING_SMALL
 import com.example.listings.models.ListingUi
 import com.example.listings.ui.components.ListingDetailView
-import com.example.ui.components.LoadingView
+import com.example.listings.ui.components.MainContentView
 import com.example.ui.models.DisplayDoubleValue
 import com.example.ui.models.DisplayIntValue
+import com.example.ui.models.UiErrorConfig
 import com.example.ui.util.DevicePreviews
 
 @Composable
 internal fun ListingDetailScreen(
-    viewModel: DetailViewModel = hiltViewModel(),
-    onErrorAction: (String) -> Unit,
+    viewModel: DetailViewModel = hiltViewModel()
 ) {
     val viewState by viewModel.viewState.collectAsStateWithLifecycle()
 
-    viewState.error?.let {
-        onErrorAction(it)
-    } ?: MainContent(viewState = viewState)
+    MainContent(viewState = viewState)
 }
 
 @Composable
 private fun MainContent(
     viewState: DetailUiState,
 ) {
-
-    when {
-        viewState.isLoading -> {
-            LoadingView(
-                modifier = Modifier.fillMaxSize()
-            )
-        }
-
-        else -> {
-            viewState.listing?.let { listing ->
-                Box(
+    MainContentView(
+        isLoading = viewState.isLoading,
+        errorConfig = viewState.error,
+    ) {
+        viewState.listing?.let { listing ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = SPACING_SMALL.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                ListingDetailView(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = SPACING_SMALL.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    ListingDetailView(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color.Transparent),
-                        imageModifier = Modifier
-                            .fillMaxWidth()
-                            .height(400.dp),
-                        listing = listing,
-                        imageContentScale = ContentScale.FillBounds
-                    )
-                }
-
+                        .fillMaxWidth()
+                        .background(Color.Transparent),
+                    imageModifier = Modifier
+                        .fillMaxWidth()
+                        .height(400.dp),
+                    listing = listing,
+                    imageContentScale = ContentScale.FillBounds
+                )
             }
         }
     }
@@ -89,6 +80,15 @@ private fun ListingDetailPreview() {
         vendor = "GSL EXPLORE", propertyType = "Maison - Villa"
     )
     val viewState = DetailUiState(listing = listing)
+    LuxImmoTheme {
+        MainContent(viewState = viewState)
+    }
+}
+
+@Composable
+@DevicePreviews
+private fun ListingDetailErrorPreview() {
+    val viewState = DetailUiState(error = UiErrorConfig(errorText = "Error", onRetry = {}))
     LuxImmoTheme {
         MainContent(viewState = viewState)
     }
