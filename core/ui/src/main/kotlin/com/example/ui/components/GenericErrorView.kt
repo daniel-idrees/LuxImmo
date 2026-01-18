@@ -21,7 +21,7 @@ import com.example.designsystem.util.SPACING_SMALL
 fun GenericErrorView(
     modifier: Modifier,
     errorText: String,
-    onRetry: () -> Unit
+    onRetry: (() -> Unit)?
 ) {
     Box(
         modifier = modifier,
@@ -36,12 +36,15 @@ fun GenericErrorView(
                 text = errorText,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            IconButton(onClick = { onRetry()} ) {
-                LuxImmoIcon(
-                    luxImmoIcon = LuxImmoIcons.Refresh,
-                    size = ICON_SIZE_LARGE,
-                    tint = MaterialTheme.colorScheme.onSurface
-                )
+
+            onRetry?.let {
+                IconButton(onClick = { onRetry() }) {
+                    LuxImmoIcon(
+                        luxImmoIcon = LuxImmoIcons.Refresh,
+                        size = ICON_SIZE_LARGE,
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
             }
         }
     }
