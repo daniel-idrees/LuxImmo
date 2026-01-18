@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -90,29 +89,27 @@ private fun MainContent(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            val headerText = if (itemCount > 0) pluralStringResource(
+                                R.plurals.listing_results_header,
+                                itemCount,
+                                itemCount
+                            ) else stringResource(R.string.no_results_found)
 
-                            if (!viewState.isRefreshing) {
-                                val headerText = if (itemCount > 0) pluralStringResource(
-                                    R.plurals.listing_results_header,
-                                    itemCount,
-                                    itemCount
-                                ) else stringResource(R.string.no_results_found)
-
-                                Text(
-                                    modifier = Modifier,
-                                    text = headerText,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
+                            Text(
+                                modifier = Modifier,
+                                text = headerText,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
 
 
-                                if (itemCount > 0) {
-                                    SortingDropdownButton(
-                                        activeSort = viewState.activeSort,
-                                        onSortSelected = { newSort ->
-                                            onAction(ListingUiAction.OnSortChange(newSort))
-                                        })
-                                }
+                            if (itemCount > 0) {
+                                SortingDropdownButton(
+                                    enabled = !viewState.isRefreshing, //do not allow click when refreshing
+                                    activeSort = viewState.activeSort,
+                                    onSortSelected = { newSort ->
+                                        onAction(ListingUiAction.OnSortChange(newSort))
+                                    })
                             }
                         }
                     }
