@@ -7,8 +7,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.core.ui.R
 import com.example.domain.AppError
 import com.example.domain.Result
-import com.example.domain.model.Listing
 import com.example.domain.usecase.GetListingDetailUseCase
+import com.example.listings.models.SyncStatus
 import com.example.listings.models.toListingUi
 import com.example.ui.models.UiErrorConfig
 import com.example.ui.resource.ResourceProvider
@@ -36,8 +36,7 @@ internal class DetailViewModel @AssistedInject constructor(
 ) : ViewModel() {
     private val _error = Channel<String>(capacity = Channel.BUFFERED)
     val errorEffect = _error.receiveAsFlow()
-
-    private val syncResult = MutableStateFlow<Result<Listing>?>(null)
+    private val syncResult = MutableStateFlow<SyncStatus>(SyncStatus.NotStarted)
     val viewState: StateFlow<DetailUiState> =
         combine(
             getListingDetailUseCase(listingId),
@@ -46,11 +45,11 @@ internal class DetailViewModel @AssistedInject constructor(
             when {
                 listing != null -> {
                     when {
-                        result is Result.Error -> {
+                        result is SyncStatus.Error -> {
                             //TODO think something how to show user that data is cached
                         }
 
-                        result is Result.Success -> {
+                        result is SyncStatus.Finished -> {
                             //TODO think something remove any cached indication
                         }
                     }
@@ -61,12 +60,21 @@ internal class DetailViewModel @AssistedInject constructor(
                     )
                 }
 
-                result is Result.Error -> {
+                result is SyncStatus.Error -> {
                     DetailUiState(
                         isLoading = false,
                         error = UiErrorConfig(
-                            getErrorTextForErrorResult(result),
+                            getErrorTextForErrorResult(result.error),
                             onRetry = ::refreshListing
+                        )
+                    )
+                }
+
+                result is SyncStatus.Finished -> {
+                    DetailUiState(
+                        isLoading = false,
+                        error = UiErrorConfig(
+                            "Listing not found",
                         )
                     )
                 }
@@ -88,13 +96,19 @@ internal class DetailViewModel @AssistedInject constructor(
 
     private fun refreshListing() {
         viewModelScope.launch {
+            syncResult.emit(SyncStatus.Running)
             val result = getListingDetailUseCase.refresh(listingId)
-            syncResult.emit(result)
+            when (result) {
+                is Result.Error -> syncResult.emit(SyncStatus.Error(result.error))
+                is Result.Success<*> -> {
+                    syncResult.emit(SyncStatus.Finished)
+                }
+            }
         }
     }
 
-    private fun getErrorTextForErrorResult(result: Result.Error): String {
-        return when (result.error) {
+    private fun getErrorTextForErrorResult(error: AppError): String {
+        return when (error) {
             AppError.NoInternetConnection -> resourceProvider.getString(R.string.error_offline)
             AppError.Unknown -> resourceProvider.getString(R.string.error_unknown)
         }
