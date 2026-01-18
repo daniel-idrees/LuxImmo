@@ -29,9 +29,7 @@ internal fun MainContentView(
                     .fillMaxSize()
                     .padding(horizontal = SPACING_SMALL.dp),
                 errorText = errorConfig.errorText,
-                onRetry = {
-                    errorConfig.onRetry()
-                }
+                onRetry = errorConfig.onRetry
             )
 
         else -> content()
