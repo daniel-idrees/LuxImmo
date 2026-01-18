@@ -9,6 +9,7 @@ import com.example.domain.AppError
 import com.example.domain.Result
 import com.example.domain.model.Listing
 import com.example.domain.usecase.GetListingsUseCase
+import com.example.listings.models.SyncStatus
 import com.example.listings.models.toListingUi
 import com.example.ui.models.UiErrorConfig
 import com.example.ui.mvi.MviViewModel
@@ -34,7 +35,7 @@ internal class ListingViewModel @Inject constructor(
     @DefaultDispatcher private val defaultDispatcher: CoroutineDispatcher
 ) : MviViewModel<ListingUiAction, ListingUiState, ListingUiEffect>() {
 
-    private val syncResult = MutableStateFlow<Result<List<Listing>>?>(null)
+    private val syncResult = MutableStateFlow<SyncStatus>(SyncStatus.NotStarted)
 
     private val sortOptionFlow = viewState
         .mapLatest { it.activeSort }
@@ -44,14 +45,8 @@ internal class ListingViewModel @Inject constructor(
 
     override fun handleAction(event: ListingUiAction) {
         when (event) {
-            ListingUiAction.Init -> {
-                loadData()
-            }
-
-            ListingUiAction.Refresh -> {
-                refreshData()
-            }
-
+            ListingUiAction.Init -> loadData()
+            ListingUiAction.Refresh -> refreshData()
             is ListingUiAction.OnListingClick -> {
                 setState {
                     copy(
@@ -101,13 +96,13 @@ internal class ListingViewModel @Inject constructor(
             .onStart {
                 refreshData()
             }.onEach { (list, result) ->
-                if (list.isNotEmpty() && result is Result.Error) {
-                    handleError(errorResult = result)
+                if (list.isNotEmpty() && result is SyncStatus.Error) {
+                    handleError(error = result.error)
                 }
                 setState {
                     copy(
                         isLoading = false,
-                        isRefreshing = result == null,
+                        isRefreshing = result is SyncStatus.Running,
                     )
                 }
             }
@@ -136,6 +131,8 @@ internal class ListingViewModel @Inject constructor(
      */
     private fun refreshData() {
         viewModelScope.launch {
+            syncResult.emit(SyncStatus.Running)
+
             setState {
                 copy(
                     isLoading = viewState.value.listings == null,
@@ -144,12 +141,15 @@ internal class ListingViewModel @Inject constructor(
             }
 
             val result = getListingsUseCase.refresh()
-            syncResult.emit(result)
+            when(result) {
+                is Result.Error -> syncResult.emit(SyncStatus.Error(result.error))
+                is Result.Success<*> -> syncResult.emit(SyncStatus.Finished)
+            }
         }
     }
 
-    private fun handleError(errorResult: Result.Error) {
-        when (errorResult.error) {
+    private fun handleError(error: AppError) {
+        when (error) {
             is AppError.NoInternetConnection -> handleNoInternetError()
             is AppError.Unknown -> handleUnknownError()
         }
