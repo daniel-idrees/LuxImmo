@@ -10,7 +10,7 @@ activityCompose = "1.12.2"
 composeBom = "2026.01.00"
 ksp = "2.3.4"
 room = "2.8.4"
-hilt = "2.57.2"
+hilt = "2.58"
 hiltNavigationCompose = "1.3.0"
 androidxCoreSplashscreen = "1.2.0"
 appcompat = "1.7.1"
@@ -22,11 +22,14 @@ kotlinxCoroutines = "1.10.2"
 navigationCompose = "2.9.6"
 coilCompose = "3.3.0"
 coilNetworkOkhttp = "3.1.0"
-lifecycleViewmodelAndroid = "2.8.7"
+lifecycleViewmodelAndroid = "2.10.0"
 androidxNavigation3 = "1.0.0"
 androidxLifecycleViewModelNavigation3 = "2.10.0"
 androidxComposeMaterial3Adaptive = "1.2.0"
 androidxComposeMaterial3AdaptiveNavigation3 = "1.3.0-alpha06"
+kotlinxCoroutinesTest = "1.10.2"
+turbine = "1.2.1"
+
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -84,6 +87,10 @@ androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = 
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 
 javax-inject = { module = "javax.inject:javax.inject", version = "1" }
+
+
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinxCoroutinesTest" }
+turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 
 
 # Dependencies of the included build-logic
