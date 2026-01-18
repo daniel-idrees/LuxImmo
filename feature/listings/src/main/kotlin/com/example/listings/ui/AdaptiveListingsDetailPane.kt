@@ -166,10 +166,7 @@ internal fun AdaptiveListingsDetailPane(
                             }
 
                             ListingDetailScreen(
-                                viewModel = detailViewModel,
-                                onErrorAction = { errorText ->
-                                    showSnackbar(errorText)
-                                }
+                                viewModel = detailViewModel
                             )
                         }
                     }
