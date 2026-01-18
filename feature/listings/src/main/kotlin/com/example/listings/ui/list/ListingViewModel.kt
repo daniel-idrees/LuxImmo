@@ -3,10 +3,10 @@
 package com.example.listings.ui.list
 
 import androidx.lifecycle.viewModelScope
+import com.example.common.di.DefaultDispatcher
 import com.example.core.ui.R
 import com.example.domain.AppError
 import com.example.domain.Result
-import com.example.domain.exception.ListingsUnavailableException
 import com.example.domain.model.Listing
 import com.example.domain.usecase.GetListingsUseCase
 import com.example.listings.models.toListingUi
@@ -15,14 +15,15 @@ import com.example.ui.mvi.MviViewModel
 import com.example.ui.resource.ResourceProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -30,15 +31,14 @@ import javax.inject.Inject
 internal class ListingViewModel @Inject constructor(
     private val resourceProvider: ResourceProvider,
     private val getListingsUseCase: GetListingsUseCase,
-    //private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
+    @DefaultDispatcher private val defaultDispatcher: CoroutineDispatcher
 ) : MviViewModel<ListingUiAction, ListingUiState, ListingUiEffect>() {
+
+    private val syncResult = MutableStateFlow<Result<List<Listing>>?>(null)
 
     private val sortOptionFlow = viewState
         .mapLatest { it.activeSort }
         .distinctUntilChanged()
-        .onEach {
-            setState { copy(isLoading = true) }
-        }
 
     override fun setInitialState(): ListingUiState = ListingUiState()
 
@@ -64,7 +64,7 @@ internal class ListingViewModel @Inject constructor(
             }
 
             is ListingUiAction.OnSortChange -> {
-                setState { copy(activeSort = event.newSort) }
+                setState { copy(activeSort = event.newSort, isLoading = true) }
             }
 
             ListingUiAction.RemoveSelection -> {
@@ -78,37 +78,49 @@ internal class ListingViewModel @Inject constructor(
     }
 
     private fun loadData() {
-        viewModelScope.launch {
-            setState { copy(isLoading = true) }
 
-            getListingsUseCase()
-                .distinctUntilChanged()
-                .catch {
-                    if (it is ListingsUnavailableException) {
-                        handleError(it.errorResult)
-                    } else {
-                        handleUnknownError()
-                    }
+        setState { copy(isLoading = true) }
+
+        combine(
+            getListingsUseCase(),
+            syncResult,
+            sortOptionFlow
+        ) { listings, result, sortOption ->
+
+            val sortedList = listings
+                .sort(sortOption)
+                .map {
+                    it.toListingUi(
+                        resourceProvider = resourceProvider
+                    )
                 }
-                .combine(sortOptionFlow) { list, sortOption ->
-                    val sortedList = list.sort(sortOption)
-                    sortedList.map {
-                        it.toListingUi(
-                            resourceProvider = resourceProvider
-                        )
-                    }
-                }
-                .flowOn(Dispatchers.Default) //for sorting
-                .collect { list ->
-                    setState {
-                        copy(
-                            isLoading = false,
-                            errorConfig = null,
-                            listings = list
-                        )
-                    }
-                }
+
+            Pair(sortedList, result)
         }
+            .flowOn(defaultDispatcher)
+            .onStart {
+                refreshData()
+            }.onEach { (list, result) ->
+                if (list.isNotEmpty() && result is Result.Error) {
+                    handleError(errorResult = result)
+                }
+                setState {
+                    copy(
+                        isLoading = false,
+                        isRefreshing = result == null,
+                    )
+                }
+            }
+            .mapLatest { it.first }
+            .distinctUntilChanged()
+            .onEach { list ->
+                setState {
+                    copy(
+                        listings = list
+                    )
+                }
+            }.launchIn(viewModelScope)
+
     }
 
     private fun List<Listing>.sort(sortOption: ListingSortOption): List<Listing> =
@@ -124,26 +136,15 @@ internal class ListingViewModel @Inject constructor(
      */
     private fun refreshData() {
         viewModelScope.launch {
-            //If no data available, show big loader else only keep refresher indicator
-            if (viewState.value.listings == null) {
-                setState { copy(isLoading = true) }
-            } else {
-                setState { copy(isRefreshing = true) }
+            setState {
+                copy(
+                    isLoading = viewState.value.listings == null,
+                    isRefreshing = true
+                )
             }
 
             val result = getListingsUseCase.refresh()
-
-            when (result) {
-                is Result.Error -> handleError(result)
-                is Result.Success -> {
-                    setState {
-                        copy(
-                            isRefreshing = false,
-                            isLoading = false
-                        )
-                    }
-                }
-            }
+            syncResult.emit(result)
         }
     }
 
@@ -151,13 +152,6 @@ internal class ListingViewModel @Inject constructor(
         when (errorResult.error) {
             is AppError.NoInternetConnection -> handleNoInternetError()
             is AppError.Unknown -> handleUnknownError()
-        }
-
-        setState {
-            copy(
-                isLoading = false,
-                isRefreshing = false,
-            )
         }
     }
 
@@ -168,23 +162,22 @@ internal class ListingViewModel @Inject constructor(
                 copy(
                     errorConfig = UiErrorConfig(
                         errorText = resourceProvider.getString(
-                            R.string.error_not_internet
+                            R.string.error_offline
                         ),
-                        onRetry = {
-                            refreshData()
-                        }
+                        onRetry = ::refreshData
                     )
                 )
             }
         } else {
             setEffect {
                 ListingUiEffect.ShowSnackbar(
-                    message = resourceProvider.getString(R.string.error_not_internet)
+                    message = resourceProvider.getString(R.string.error_offline)
                 )
             }
         }
     }
-    private fun handleUnknownError(){
+
+    private fun handleUnknownError() {
         val currentListing = viewState.value.listings
         if (currentListing == null || currentListing.isEmpty()) {
             setState {
