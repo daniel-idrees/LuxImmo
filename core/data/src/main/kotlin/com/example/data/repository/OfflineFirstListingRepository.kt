@@ -48,14 +48,20 @@ internal class OfflineFirstListingRepository @Inject constructor(
         )
     }
 
-    override suspend fun refreshListing(listingId: Int): Result<Listing> {
+    override suspend fun refreshListing(listingId: Int): Result<Listing?> {
         runSuspendCatching {
             gslNetworkDataSource.getListing(listingId)
         }.fold(
             onSuccess = { networkListing ->
-                val entity = networkListing.asEntity()
-                dao.upsertListing(entity)
-                return Result.Success(entity.asExternalModel())
+                val entity = networkListing?.asEntity()
+                //null means nothing was found or listing is deleted on remote
+                if(entity == null ) {
+                    dao.deleteListing(listingId) // delete the cached listing
+                } else  {
+                    dao.upsertListing(entity)
+                }
+
+                return Result.Success(entity?.asExternalModel())
             },
             onFailure = {
                 return it.toErrorResult()

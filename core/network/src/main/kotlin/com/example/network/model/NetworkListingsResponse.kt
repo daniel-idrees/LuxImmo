@@ -4,7 +4,7 @@ import kotlinx.serialization.Serializable
 
 @OptIn(kotlinx.serialization.InternalSerializationApi::class)
 @Serializable
-data class NetworkListingResponse(
+data class NetworkListingsResponse(
     val items: List<NetworkListing>,
     val totalCount: Int
 )

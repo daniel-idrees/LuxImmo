@@ -1,12 +1,13 @@
 package com.example.network
 
 import com.example.network.model.NetworkListing
-import com.example.network.model.NetworkListingResponse
+import com.example.network.model.NetworkListingsResponse
+import retrofit2.Response
 
 /**
  * Interface representing network calls to the Gsl backend
  */
 interface GslNetworkDataSource {
-    suspend fun getListings(): NetworkListingResponse
-    suspend fun getListing(id: Int): NetworkListing
+    suspend fun getListings(): NetworkListingsResponse
+    suspend fun getListing(id: Int): NetworkListing?
 }

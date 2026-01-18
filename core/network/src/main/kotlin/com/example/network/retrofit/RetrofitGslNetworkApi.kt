@@ -2,7 +2,9 @@ package com.example.network.retrofit
 
 import com.example.network.GslNetworkDataSource
 import com.example.network.model.NetworkListing
-import com.example.network.model.NetworkListingResponse
+import com.example.network.model.NetworkListingsResponse
+import retrofit2.HttpException
+import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.http.GET
 import retrofit2.http.Path
@@ -15,12 +17,12 @@ import javax.inject.Singleton
  */
 interface RetrofitGslNetworkApi {
     @GET("/listings.json")
-    suspend fun getListings(): NetworkListingResponse
+    suspend fun getListings(): NetworkListingsResponse
 
     @GET("listings/{listingId}.json")
     suspend fun getListing(
         @Path("listingId") id: Int
-    ): NetworkListing
+    ): Response<NetworkListing?>
 }
 
 /**
@@ -31,9 +33,22 @@ class RetrofitGslApiClient @Inject constructor(
     private val networkApi: RetrofitGslNetworkApi
 ) : GslNetworkDataSource {
 
-    override suspend fun getListings(): NetworkListingResponse =
+    override suspend fun getListings(): NetworkListingsResponse =
         networkApi.getListings()
 
-    override suspend fun getListing(id: Int): NetworkListing =
-        networkApi.getListing(id = id)
+    override suspend fun getListing(id: Int): NetworkListing? {
+        val response = networkApi.getListing(id = id)
+        return when {
+            response.isSuccessful -> {
+                response.body()
+            }
+            response.code() == 403 || response.code() == 404 -> {
+                //either access was forbidden or listing was not found
+                null
+            }
+            else -> {
+                throw HttpException(response)
+            }
+        }
+    }
 }

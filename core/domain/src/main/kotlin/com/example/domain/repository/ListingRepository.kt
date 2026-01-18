@@ -40,5 +40,5 @@ interface ListingRepository {
      * @param listingId The unique identifier of the listing.
      * @return A [Result] indicating success with the refreshed data or a failure state.
      */
-    suspend fun refreshListing(listingId: Int): Result<Listing>
+    suspend fun refreshListing(listingId: Int): Result<Listing?>
 }

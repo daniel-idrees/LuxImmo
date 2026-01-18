@@ -1,6 +1,7 @@
 package com.example.database.dao
 
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
@@ -21,6 +22,9 @@ interface ListingDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertListings(listings: List<ListingEntity>)
+
+    @Query("DELETE FROM listings WHERE id = :listingId")
+    suspend fun deleteListing(listingId: Int)
 
     @Query("DELETE FROM listings")
     suspend fun deleteAll()
