@@ -1,11 +1,8 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Properties
 
 plugins {
-    alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.hilt)
-    alias(libs.plugins.ksp)
+    alias(libs.plugins.luximmo.android.library)
+    alias(libs.plugins.luximmo.android.hilt)
     alias(libs.plugins.kotlin.serialization)
 }
 
@@ -21,31 +18,13 @@ android {
     buildFeatures {
         buildConfig = true
     }
-    compileSdk {
-        version = release(36)
-    }
     defaultConfig {
         buildConfigField("String", baseUrlKey, "\"${baseUrl}\"")
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
-}
-
-kotlin {
-    compilerOptions {
-        jvmTarget = JvmTarget.JVM_11
     }
 }
 
 dependencies {
     implementation(project(":core:domain"))
-
-    //hilt
-    implementation(libs.hilt.android)
-    ksp(libs.hilt.compiler)
 
     implementation(libs.kotlinx.serialization.json)
 

@@ -1,37 +1,11 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
-    alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.hilt)
-    alias(libs.plugins.ksp)
+    alias(libs.plugins.luximmo.android.library)
+    alias(libs.plugins.luximmo.android.compose)
+    alias(libs.plugins.luximmo.android.hilt)
 }
 
 android {
     namespace = "com.example.core.ui"
-    compileSdk {
-        version = release(36)
-    }
-
-    defaultConfig {
-        minSdk = 24
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
-    }
-}
-
-kotlin {
-    compilerOptions {
-        jvmTarget = JvmTarget.JVM_11
-    }
-
-    sourceSets.all {
-        languageSettings.enableLanguageFeature("ExplicitBackingFields")
-    }
 }
 
 dependencies {
@@ -49,10 +23,6 @@ dependencies {
     //coil
     api(libs.coil3.compose)
     api(libs.coil3.coil.network.okhttp)
-
-    //hilt
-    implementation(libs.hilt.android)
-    ksp(libs.hilt.compiler)
 
     //splash
     implementation(libs.androidx.core.splashscreen)
