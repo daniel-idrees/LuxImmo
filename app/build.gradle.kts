@@ -8,10 +8,6 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
-configurations.all {
-    exclude(group = "com.intellij", module = "annotations")
-}
-
 android {
     namespace = "com.example.luximmo"
     compileSdk {
@@ -71,6 +67,7 @@ dependencies {
 
     //hilt
     implementation(libs.hilt.android)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     ksp(libs.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.compose)
 
