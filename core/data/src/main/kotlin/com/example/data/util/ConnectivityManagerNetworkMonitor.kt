@@ -22,15 +22,20 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import androidx.core.content.getSystemService
+import com.example.common.di.ApplicationScope
+import com.example.domain.util.NetworkMonitor
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.shareIn
 import javax.inject.Inject
 
 internal class ConnectivityManagerNetworkMonitor @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    @ApplicationScope private val applicationScope: CoroutineScope
 ) : NetworkMonitor {
 
     private val connectivityManager = context.getSystemService<ConnectivityManager>()
@@ -57,7 +62,12 @@ internal class ConnectivityManagerNetworkMonitor @Inject constructor(
         awaitClose {
             connectivityManager?.unregisterNetworkCallback(callback)
         }
-    }.conflate()
+    }
+        .shareIn(
+            scope = applicationScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            replay = 1
+        )
 
     private fun isCurrentlyConnected(): Boolean {
         val activeNetwork = connectivityManager?.activeNetwork ?: return false
