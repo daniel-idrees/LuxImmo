@@ -80,6 +80,8 @@ BASE_URL=https://your.api.base.url/ {You know the base url ;)}
 
    
 #### Possible Enhancements
+- Better Place holder Image for listings with no image available.
+- Better Screen for empty state where no listings are available.
 - Improved view for landscape in the devices where only single detail screen is shown.
-- Filtering listings result
-- Bookmarking listings
+- Filtering listings result.
+- Bookmarking listings.
