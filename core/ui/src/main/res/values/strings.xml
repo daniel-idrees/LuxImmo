@@ -2,10 +2,10 @@
 <resources>
 
     <plurals name="listing_results_header">
-        <item quantity="one">%d result found</item>
-        <item quantity="other">%d results found</item>
+        <item quantity="one">%d property for sale</item>
+        <item quantity="other">%d properties for sale</item>
     </plurals>
-    <string name="no_results_found">no results found</string>
+    <string name="no_results_found">no properties available</string>
 
     <plurals name="listing_rooms_format">
         <item quantity="one">%d room</item>
