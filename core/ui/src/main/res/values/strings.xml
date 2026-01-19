@@ -22,9 +22,10 @@
     <string name="price_per_square_meter_format"> %1$s/m²</string>
 
     <string name="sorting_option_default">Default</string>
-    <string name="sorting_option_price_asc">Price Ascending</string>
-    <string name="sorting_option_price_desc">Price Descending</string>
-    <string name="sorting_option_area">Area</string>
+    <string name="sorting_option_price_asc">Price Asc</string>
+    <string name="sorting_option_price_desc">Price Desc</string>
+    <string name="sorting_option_price_per_square_meter_asc">Price/m² Asc</string>
+    <string name="sorting_option_price_per_square_meter_desc">Price/m² Desc</string>
 
     <string name="detail_no_selection">Select a listing"</string>
 

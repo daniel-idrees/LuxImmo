@@ -694,6 +694,50 @@ class ListViewModelTest {
     }
 
     @Test
+    fun `when sort option changes to price per m2 desc, and further price desc to tie break, list is sorted`() = runTest {
+        listingRepository.sendListings(sampleListings)
+        viewModel.setAction(ListingUiAction.Init)
+
+        viewModel.viewState.test {
+            awaitItem() // Skip initial state
+
+            // Action: Price per Square Meter Descending (Highest first)
+            viewModel.setAction(ListingUiAction.OnSortChange(ListingSortOption.PricePerSquareMeterDesc))
+
+            // Assertions
+            assertEquals(ListingSortOption.PricePerSquareMeterDesc, awaitItem().activeSort)
+
+            val sortedList = awaitItem().listings
+            // ID 1 or 2 have 2,000 per m2 (Highest), but ID 1 is expensive than 2 so ID 1 will be first
+            assertEquals(1, sortedList[0].id)
+            // ID 3 has ~666 per m2 (Lowest)
+            assertEquals(3, sortedList.last().id)
+        }
+    }
+
+    @Test
+    fun `when sort option changes to price per m2 asc, and further price asc to tie break, list is sorted`() = runTest {
+        listingRepository.sendListings(sampleListings)
+        viewModel.setAction(ListingUiAction.Init)
+
+        viewModel.viewState.test {
+            awaitItem() // Skip initial state
+
+            // Action: Price per Square Meter Ascending (Lowest first)
+            viewModel.setAction(ListingUiAction.OnSortChange(ListingSortOption.PricePerSquareMeterAsc))
+
+            // Assertions
+            assertEquals(ListingSortOption.PricePerSquareMeterAsc, awaitItem().activeSort)
+
+            val sortedList = awaitItem().listings
+            // ID 3 has 666 per m2 (Lowest)
+            assertEquals(3, sortedList[0].id)
+            // ID 1 or 2 have 2,000 per m2 (Highest) but ID 2 cheaper than ID 1, then ID 2 should be last
+            assertEquals(2, sortedList.last().id)
+        }
+    }
+
+    @Test
     fun `when sort option changes to other option and then to default, actual order of the list is restored`() =
         runTest {
             // Keep the data ready
@@ -708,10 +752,10 @@ class ListViewModelTest {
                 assertEquals(sampleListings[0].id, initialList[0].id) // Listing with ID 1 is first
 
                 // Change sort option to Price Ascending
-                viewModel.setAction(ListingUiAction.OnSortChange(ListingSortOption.Area))
+                viewModel.setAction(ListingUiAction.OnSortChange(ListingSortOption.PriceAsc))
 
                 // view state update with sort option
-                (awaitItem().activeSort == ListingSortOption.Area)
+                (awaitItem().activeSort == ListingSortOption.PriceAsc)
 
                 // Assert
                 val sortedList = awaitItem().listings

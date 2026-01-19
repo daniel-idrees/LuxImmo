@@ -23,5 +23,6 @@ internal enum class ListingSortOption(@StringRes val labelRes: Int) {
     Default(R.string.sorting_option_default),
     PriceAsc(R.string.sorting_option_price_asc),
     PriceDesc(R.string.sorting_option_price_desc),
-    Area(R.string.sorting_option_area)
+    PricePerSquareMeterAsc(R.string.sorting_option_price_per_square_meter_asc),
+    PricePerSquareMeterDesc(R.string.sorting_option_price_per_square_meter_desc)
 }

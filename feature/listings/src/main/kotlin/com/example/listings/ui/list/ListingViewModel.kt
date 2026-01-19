@@ -7,9 +7,9 @@ import com.example.common.di.DefaultDispatcher
 import com.example.core.ui.R
 import com.example.domain.AppError
 import com.example.domain.Result
-import com.example.domain.model.Listing
 import com.example.domain.usecase.GetListingsUseCase
 import com.example.domain.util.NetworkMonitor
+import com.example.listings.models.ListingUi
 import com.example.listings.models.SyncStatus
 import com.example.listings.models.toListingUi
 import com.example.ui.models.UiErrorConfig
@@ -105,8 +105,8 @@ internal class ListingViewModel @Inject constructor(
         val sortedListingsFlow =
             combine(getListingsUseCase(), sortOptionFlow) { listings, sortOption ->
                 listings
-                    .sort(sortOption)
                     .map { it.toListingUi(resourceProvider = resourceProvider) }
+                    .sort(sortOption)
             }.flowOn(defaultDispatcher)
 
         combine(sortedListingsFlow, syncResult) { list, result ->
@@ -119,7 +119,7 @@ internal class ListingViewModel @Inject constructor(
             .onEach { (list, result, errorConfig) ->
 
                 // list is available but sync failed
-                if(list.isNotEmpty() && result is SyncStatus.Error) {
+                if (list.isNotEmpty() && result is SyncStatus.Error) {
                     handleErrorEffect(error = result.error)
                 }
 
@@ -135,12 +135,20 @@ internal class ListingViewModel @Inject constructor(
             .launchIn(viewModelScope)
     }
 
-    private fun List<Listing>.sort(sortOption: ListingSortOption): List<Listing> =
+    private fun List<ListingUi>.sort(sortOption: ListingSortOption): List<ListingUi> =
         when (sortOption) {
             ListingSortOption.Default -> this
-            ListingSortOption.PriceAsc -> this.sortedBy { it.price }
-            ListingSortOption.PriceDesc -> this.sortedByDescending { it.price }
-            ListingSortOption.Area -> this.sortedBy { it.area }
+            ListingSortOption.PriceAsc -> this.sortedBy { it.price.value }
+            ListingSortOption.PriceDesc -> this.sortedByDescending { it.price.value }
+            // After asc price per meter value, sort by price if same price per meter value
+            ListingSortOption.PricePerSquareMeterAsc -> this.sortedWith(
+                compareBy<ListingUi> { it.pricePerSquareMeter.value }
+                    .thenBy { it.pricePerSquareMeter.value })
+            // After desc price per meter value, sort desc by price if same price per meter value
+            ListingSortOption.PricePerSquareMeterDesc -> this.sortedWith(
+                compareByDescending<ListingUi> { it.pricePerSquareMeter.value }
+                    .thenByDescending { it.pricePerSquareMeter.value }
+            )
         }
 
     /**
