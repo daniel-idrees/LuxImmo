@@ -32,7 +32,7 @@ internal object CoroutineDispatchersModule {
     @Singleton
     @Provides
     fun providesApplicationScope(
-        @DefaultDispatcher defaultDispatcher: CoroutineDispatcher, // Default behtar hai background management ke liye
+        @DefaultDispatcher defaultDispatcher: CoroutineDispatcher,
     ): CoroutineScope = CoroutineScope(SupervisorJob() + defaultDispatcher)
 }
 
