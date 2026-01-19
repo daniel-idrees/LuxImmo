@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.core.ui.R
 import com.example.domain.AppError
 import com.example.domain.Result
+import com.example.domain.model.Listing
 import com.example.domain.usecase.GetListingDetailUseCase
 import com.example.listings.models.SyncStatus
 import com.example.listings.models.toListingUi
@@ -23,9 +24,12 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 @HiltViewModel(assistedFactory = DetailViewModel.Factory::class)
@@ -34,65 +38,71 @@ internal class DetailViewModel @AssistedInject constructor(
     private val resourceProvider: ResourceProvider,
     @Assisted val listingId: Int,
 ) : ViewModel() {
-    private val _error = Channel<String>(capacity = Channel.BUFFERED)
-    val errorEffect = _error.receiveAsFlow()
     private val syncResult = MutableStateFlow<SyncStatus>(SyncStatus.NotStarted)
-    val viewState: StateFlow<DetailUiState> =
+
+    val viewState: StateFlow<DetailUiState>
+        field = MutableStateFlow(DetailUiState(isLoading = true))
+
+    // Do it from view to have control
+    fun initialise() {
+        loadData()
+    }
+
+    private fun loadData() {
         combine(
             getListingDetailUseCase(listingId),
-            syncResult
+            syncResult,
         ) { listing, result ->
-            when {
-                listing != null -> {
-                    when {
-                        result is SyncStatus.Error -> {
-                            //TODO think something how to show user that data is cached
-                        }
-
-                        result is SyncStatus.Finished -> {
-                            //TODO think something remove any cached indication
-                        }
-                    }
-
-                    DetailUiState(
-                        listing = listing.toListingUi(resourceProvider),
-                        isLoading = false
-                    )
-                }
-
-                result is SyncStatus.Error -> {
-                    DetailUiState(
-                        isLoading = false,
-                        error = UiErrorConfig(
-                            getErrorTextForErrorResult(result.error),
-                            onRetry = ::refreshListing
-                        )
-                    )
-                }
-
-                result is SyncStatus.Finished -> {
-                    DetailUiState(
-                        isLoading = false,
-                        error = UiErrorConfig(
-                            "Listing not found",
-                        )
-                    )
-                }
-
-                else -> {
-                    DetailUiState(isLoading = true) // keep waiting for the data
-                }
-            }
+            // calculateError will decide whether to show error or not
+            val errorConfig = calculateError(listing, result)
+            Pair(listing, errorConfig)
         }
             .onStart {
                 refreshListing()
             }
-            .distinctUntilChanged()
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
-                initialValue = DetailUiState(isLoading = true)
+            .onEach { (listing, errorConfig) ->
+                // loader shows when no listing is available and
+                // there is no error either, which means sync is not completed
+                viewState.update {
+                    it.copy(
+                        listing = listing?.toListingUi(resourceProvider),
+                        isLoading = listing == null && errorConfig == null,
+                        error = errorConfig
+                    )
+                }
+            }
+            .launchIn(viewModelScope)
+    }
+
+    /**
+     *  We avoid showing error if the listing is available
+     *  We only show error when listing is not available for
+     *  either sync failure or sync finished case (when listing is still not available)
+     */
+    private fun calculateError(listing: Listing?, result: SyncStatus): UiErrorConfig? {
+
+        if(listing != null) {
+            // TODO when list is available but result is SyncStatus.Error, notify the user that data is cached
+
+            // For now, Do not show error when listing is present
+            return null
+        }
+
+        // error screen when listing was not available for certain sync conditions
+        return when (result) {
+            is SyncStatus.Error -> UiErrorConfig(
+                getErrorTextForErrorResult(result.error),
+                onRetry = ::refreshListing
             )
+
+
+            is SyncStatus.Finished -> UiErrorConfig(
+                resourceProvider.getString(R.string.error_not_found)
+            )
+
+            else -> null
+        }
+    }
 
     private fun refreshListing() {
         viewModelScope.launch {
