@@ -142,13 +142,6 @@ internal fun AdaptiveListingsDetailPane(
                                 factory.create(selectedId)
                             }
 
-                        ObserveSideEffects(detailViewModel.errorEffect) { error ->
-                            scope.launch {
-                                navigator.navigateBack(backNavigationBehavior)
-                            }
-                            showSnackbar(error)
-                        }
-
                         Column(modifier = Modifier.fillMaxWidth()) {
                             if (navigator.scaffoldValue[ListDetailPaneScaffoldRole.Detail] == PaneAdaptedValue.Expanded) {
                                 IconButton(
