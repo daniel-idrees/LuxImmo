@@ -24,12 +24,17 @@ import com.example.ui.models.DisplayDoubleValue
 import com.example.ui.models.DisplayIntValue
 import com.example.ui.models.UiErrorConfig
 import com.example.ui.util.DevicePreviews
+import com.example.ui.util.OneTimeLaunchedEffect
 
 @Composable
 internal fun ListingDetailScreen(
     viewModel: DetailViewModel = hiltViewModel()
 ) {
     val viewState by viewModel.viewState.collectAsStateWithLifecycle()
+
+    OneTimeLaunchedEffect {
+        viewModel.initialise()
+    }
 
     MainContent(viewState = viewState)
 }
