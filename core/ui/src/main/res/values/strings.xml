@@ -34,5 +34,6 @@
     <string name="error_no_internet">⚠️ You are not connected to the Internet</string>
     <string name="error_unknown">Something went wrong ...</string>
     <string name="error_offline">You are currently offline</string>
+    <string name="error_not_found">Listing not found</string>
 
 </resources>
