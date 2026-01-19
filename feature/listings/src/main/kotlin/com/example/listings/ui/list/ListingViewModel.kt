@@ -43,12 +43,20 @@ internal class ListingViewModel @Inject constructor(
 
     private val syncResult = MutableStateFlow<SyncStatus>(SyncStatus.NotStarted)
 
-    override fun setInitialState(): ListingUiState = ListingUiState()
+    override fun setInitialState(): ListingUiState = ListingUiState(isLoading = true)
 
     override fun handleAction(event: ListingUiAction) {
         when (event) {
             ListingUiAction.Init -> initialise()
-            ListingUiAction.Refresh -> refreshData()
+            ListingUiAction.Refresh -> {
+                setState {
+                    copy(
+                        isRefreshing = true
+                    )
+                }
+                refreshData()
+            }
+
             is ListingUiAction.OnListingClick -> {
                 setState {
                     copy(
@@ -77,9 +85,12 @@ internal class ListingViewModel @Inject constructor(
                 .debounce(1000)
                 .filter { isOnline -> isOnline }
                 .collectLatest {
-                    if (syncResult.value is SyncStatus.Error
-                        && viewState.value.listings.isEmpty()
-                    ) {
+                    if (syncResult.value is SyncStatus.Error) {
+                        setState {
+                            copy(
+                                isRefreshing = true
+                            )
+                        }
                         refreshData()
                     }
                 }
@@ -87,55 +98,41 @@ internal class ListingViewModel @Inject constructor(
     }
 
     private fun loadData() {
-        setState { copy(isLoading = true) }
-
-        val listFlow = getListingsUseCase()
-            .onStart {
-                refreshData()
-            }
-            .distinctUntilChanged()
-
         val sortOptionFlow = viewState
             .mapLatest { it.activeSort }
             .distinctUntilChanged()
 
-        viewModelScope.launch {
-            combine(listFlow, sortOptionFlow) { list, sortOption ->
-                list
+        val sortedListingsFlow =
+            combine(getListingsUseCase(), sortOptionFlow) { listings, sortOption ->
+                listings
                     .sort(sortOption)
                     .map { it.toListingUi(resourceProvider = resourceProvider) }
-            }
-                .flowOn(defaultDispatcher)
-                .collectLatest { sortedList ->
-                    setState {
-                        copy(
-                            listings = sortedList,
-                            isLoading = false
-                        )
-                    }
-                }
-        }
+            }.flowOn(defaultDispatcher)
 
-        syncResult
-            .onEach { result ->
-                if (result is SyncStatus.Error) {
-                    handleError(error = result.error)
-                    setState {
-                        copy(
-                            isRefreshing = false,
-                            isLoading = false
-                        )
-                    }
-                } else if (result is SyncStatus.Finished) {
-                    setState {
-                        copy(
-                            errorConfig = null,
-                            isRefreshing = false,
-                            isLoading = false
-                        )
-                    }
+        combine(sortedListingsFlow, syncResult) { list, result ->
+            val errorConfig: UiErrorConfig? =
+                if (list.isEmpty() && result is SyncStatus.Error) getErrorConfig(error = result.error) else null
+
+            Triple(list, result, errorConfig)
+        }
+            .onStart { refreshData() }
+            .onEach { (list, result, errorConfig) ->
+
+                // list is available but sync failed
+                if(list.isNotEmpty() && result is SyncStatus.Error) {
+                    handleErrorEffect(error = result.error)
                 }
-            }.launchIn(viewModelScope)
+
+                setState {
+                    copy(
+                        listings = list,
+                        errorConfig = errorConfig,
+                        isRefreshing = result is SyncStatus.Running,
+                        isLoading = list.isEmpty() && result is SyncStatus.Running
+                    )
+                }
+            }
+            .launchIn(viewModelScope)
     }
 
     private fun List<Listing>.sort(sortOption: ListingSortOption): List<Listing> =
@@ -153,12 +150,6 @@ internal class ListingViewModel @Inject constructor(
         viewModelScope.launch {
             syncResult.emit(SyncStatus.Running)
 
-            setState {
-                copy(
-                    isRefreshing = true
-                )
-            }
-
             val result = getListingsUseCase.refresh()
             when (result) {
                 is Result.Error -> syncResult.emit(SyncStatus.Error(result.error))
@@ -167,52 +158,33 @@ internal class ListingViewModel @Inject constructor(
         }
     }
 
-    private fun handleError(error: AppError) {
-        when (error) {
-            is AppError.NoInternetConnection -> handleNoInternetError()
-            is AppError.Unknown -> handleUnknownError()
+    private fun getErrorConfig(error: AppError): UiErrorConfig? {
+        return when (error) {
+            is AppError.NoInternetConnection -> return UiErrorConfig(
+                errorText = resourceProvider.getString(
+                    R.string.error_offline
+                ),
+                onRetry = ::refreshData
+            )
+
+            is AppError.Unknown -> UiErrorConfig(
+                errorText = resourceProvider.getString(
+                    R.string.error_unknown
+                ),
+                onRetry = ::refreshData
+            )
         }
     }
 
-    private fun handleNoInternetError() {
-        val currentListing = viewState.value.listings
-        if (currentListing.isEmpty()) {
-            setState {
-                copy(
-                    errorConfig = UiErrorConfig(
-                        errorText = resourceProvider.getString(
-                            R.string.error_offline
-                        ),
-                        onRetry = ::refreshData
-                    )
-                )
-            }
-        } else {
-            setEffect {
+    private fun handleErrorEffect(error: AppError) {
+        when (error) {
+            is AppError.NoInternetConnection -> setEffect {
                 ListingUiEffect.ShowSnackbar(
                     message = resourceProvider.getString(R.string.error_offline)
                 )
             }
-        }
-    }
 
-    private fun handleUnknownError() {
-        val currentListing = viewState.value.listings
-        if (currentListing.isEmpty()) {
-            setState {
-                copy(
-                    errorConfig = UiErrorConfig(
-                        errorText = resourceProvider.getString(
-                            R.string.error_unknown
-                        ),
-                        onRetry = {
-                            refreshData()
-                        }
-                    )
-                )
-            }
-        } else {
-            setEffect {
+            is AppError.Unknown -> setEffect {
                 ListingUiEffect.ShowSnackbar(
                     message = resourceProvider.getString(R.string.error_unknown)
                 )
