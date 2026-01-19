@@ -4,7 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import com.example.data.util.NetworkMonitor
+import com.example.domain.util.NetworkMonitor
 import com.example.luximmo.ui.LuxImmoApp
 import com.example.designsystem.theme.LuxImmoTheme
 import com.example.luximmo.ui.rememberLuxImmoAppState
