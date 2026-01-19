@@ -21,10 +21,12 @@ android {
     defaultConfig {
         buildConfigField("String", baseUrlKey, "\"${baseUrl}\"")
     }
+    testOptions.unitTests.isIncludeAndroidResources = true
 }
 
 dependencies {
     implementation(project(":core:domain"))
+    implementation(project(":core:common"))
 
     implementation(libs.kotlinx.serialization.json)
 
@@ -34,4 +36,12 @@ dependencies {
     //retrofit
     implementation(libs.retrofit.core)
     implementation(libs.retrofit.kotlin.serialization)
+
+    //testing
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.turbine)
+    testImplementation (libs.mockito.kotlin)
+    testImplementation(libs.mockito.core)
+    testImplementation(libs.mockito.inline)
 }
