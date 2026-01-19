@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalCoroutinesApi::class)
+@file:OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
 
 package com.example.listings.ui.list
 
@@ -9,6 +9,7 @@ import com.example.domain.AppError
 import com.example.domain.Result
 import com.example.domain.model.Listing
 import com.example.domain.usecase.GetListingsUseCase
+import com.example.domain.util.NetworkMonitor
 import com.example.listings.models.SyncStatus
 import com.example.listings.models.toListingUi
 import com.example.ui.models.UiErrorConfig
@@ -17,9 +18,13 @@ import com.example.ui.resource.ResourceProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.mapLatest
@@ -32,20 +37,17 @@ import javax.inject.Inject
 internal class ListingViewModel @Inject constructor(
     private val resourceProvider: ResourceProvider,
     private val getListingsUseCase: GetListingsUseCase,
+    private val networkMonitor: NetworkMonitor,
     @DefaultDispatcher private val defaultDispatcher: CoroutineDispatcher
 ) : MviViewModel<ListingUiAction, ListingUiState, ListingUiEffect>() {
 
     private val syncResult = MutableStateFlow<SyncStatus>(SyncStatus.NotStarted)
 
-    private val sortOptionFlow = viewState
-        .mapLatest { it.activeSort }
-        .distinctUntilChanged()
-
     override fun setInitialState(): ListingUiState = ListingUiState()
 
     override fun handleAction(event: ListingUiAction) {
         when (event) {
-            ListingUiAction.Init -> loadData()
+            ListingUiAction.Init -> initialise()
             ListingUiAction.Refresh -> refreshData()
             is ListingUiAction.OnListingClick -> {
                 setState {
@@ -58,64 +60,82 @@ internal class ListingViewModel @Inject constructor(
                 }
             }
 
-            is ListingUiAction.OnSortChange -> {
-                setState { copy(activeSort = event.newSort, isLoading = true) }
-            }
+            is ListingUiAction.OnSortChange -> setState { copy(activeSort = event.newSort) }
+            ListingUiAction.RemoveSelection -> setState { copy(selectedListing = null) }
+        }
+    }
 
-            ListingUiAction.RemoveSelection -> {
-                setState {
-                    copy(
-                        selectedListing = null
-                    )
+    private fun initialise() {
+        loadData()
+        observeAndHandleNetworkState()
+    }
+
+    private fun observeAndHandleNetworkState() {
+        viewModelScope.launch {
+            networkMonitor.isOnline
+                .distinctUntilChanged()
+                .debounce(1000)
+                .filter { isOnline -> isOnline }
+                .collectLatest {
+                    if (syncResult.value is SyncStatus.Error
+                        && viewState.value.listings.isEmpty()
+                    ) {
+                        refreshData()
+                    }
                 }
-            }
         }
     }
 
     private fun loadData() {
-
         setState { copy(isLoading = true) }
 
-        combine(
-            getListingsUseCase(),
-            syncResult,
-            sortOptionFlow
-        ) { listings, result, sortOption ->
-
-            val sortedList = listings
-                .sort(sortOption)
-                .map {
-                    it.toListingUi(
-                        resourceProvider = resourceProvider
-                    )
-                }
-
-            Pair(sortedList, result)
-        }
-            .flowOn(defaultDispatcher)
+        val listFlow = getListingsUseCase()
             .onStart {
                 refreshData()
-            }.onEach { (list, result) ->
-                if (list.isNotEmpty() && result is SyncStatus.Error) {
-                    handleError(error = result.error)
-                }
-                setState {
-                    copy(
-                        isLoading = false,
-                        isRefreshing = result is SyncStatus.Running,
-                    )
-                }
             }
-            .mapLatest { it.first }
             .distinctUntilChanged()
-            .onEach { list ->
-                setState {
-                    copy(
-                        listings = list
-                    )
+
+        val sortOptionFlow = viewState
+            .mapLatest { it.activeSort }
+            .distinctUntilChanged()
+
+        viewModelScope.launch {
+            combine(listFlow, sortOptionFlow) { list, sortOption ->
+                list
+                    .sort(sortOption)
+                    .map { it.toListingUi(resourceProvider = resourceProvider) }
+            }
+                .flowOn(defaultDispatcher)
+                .collectLatest { sortedList ->
+                    setState {
+                        copy(
+                            listings = sortedList,
+                            isLoading = false
+                        )
+                    }
+                }
+        }
+
+        syncResult
+            .onEach { result ->
+                if (result is SyncStatus.Error) {
+                    handleError(error = result.error)
+                    setState {
+                        copy(
+                            isRefreshing = false,
+                            isLoading = false
+                        )
+                    }
+                } else if (result is SyncStatus.Finished) {
+                    setState {
+                        copy(
+                            errorConfig = null,
+                            isRefreshing = false,
+                            isLoading = false
+                        )
+                    }
                 }
             }.launchIn(viewModelScope)
-
     }
 
     private fun List<Listing>.sort(sortOption: ListingSortOption): List<Listing> =
@@ -135,13 +155,12 @@ internal class ListingViewModel @Inject constructor(
 
             setState {
                 copy(
-                    isLoading = viewState.value.listings == null,
                     isRefreshing = true
                 )
             }
 
             val result = getListingsUseCase.refresh()
-            when(result) {
+            when (result) {
                 is Result.Error -> syncResult.emit(SyncStatus.Error(result.error))
                 is Result.Success<*> -> syncResult.emit(SyncStatus.Finished)
             }
@@ -157,7 +176,7 @@ internal class ListingViewModel @Inject constructor(
 
     private fun handleNoInternetError() {
         val currentListing = viewState.value.listings
-        if (currentListing == null || currentListing.isEmpty()) {
+        if (currentListing.isEmpty()) {
             setState {
                 copy(
                     errorConfig = UiErrorConfig(
@@ -179,7 +198,7 @@ internal class ListingViewModel @Inject constructor(
 
     private fun handleUnknownError() {
         val currentListing = viewState.value.listings
-        if (currentListing == null || currentListing.isEmpty()) {
+        if (currentListing.isEmpty()) {
             setState {
                 copy(
                     errorConfig = UiErrorConfig(
