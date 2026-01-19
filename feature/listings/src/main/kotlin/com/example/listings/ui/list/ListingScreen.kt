@@ -67,69 +67,66 @@ private fun MainContent(
         errorConfig = viewState.errorConfig,
     ) {
 
-        if (viewState.listings != null) {
-
-            PullToRefreshBox(
-                isRefreshing = viewState.isRefreshing,
-                onRefresh = { onAction(ListingUiAction.Refresh) },
-                modifier = Modifier.fillMaxSize()
+        PullToRefreshBox(
+            isRefreshing = viewState.isRefreshing,
+            onRefresh = { onAction(ListingUiAction.Refresh) },
+            modifier = Modifier.fillMaxSize()
+        ) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(vertical = SPACING_MEDIUM.dp, horizontal = 8.dp)
             ) {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(vertical = SPACING_MEDIUM.dp, horizontal = 8.dp)
-                ) {
-                    val itemCount = viewState.listings.size
+                val itemCount = viewState.listings.size
 
-                    item {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = SPACING_MEDIUM.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            val headerText = if (itemCount > 0) pluralStringResource(
-                                R.plurals.listing_results_header,
-                                itemCount,
-                                itemCount
-                            ) else stringResource(R.string.no_results_found)
+                item {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = SPACING_MEDIUM.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val headerText = if (itemCount > 0) pluralStringResource(
+                            R.plurals.listing_results_header,
+                            itemCount,
+                            itemCount
+                        ) else stringResource(R.string.no_results_found)
 
-                            Text(
-                                modifier = Modifier,
-                                text = headerText,
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
+                        Text(
+                            modifier = Modifier,
+                            text = headerText,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
 
 
-                            if (itemCount > 0) {
-                                SortingDropdownButton(
-                                    enabled = !viewState.isRefreshing, //do not allow click when refreshing
-                                    activeSort = viewState.activeSort,
-                                    onSortSelected = { newSort ->
-                                        onAction(ListingUiAction.OnSortChange(newSort))
-                                    })
-                            }
+                        if (itemCount > 0) {
+                            SortingDropdownButton(
+                                enabled = !viewState.isRefreshing, //do not allow click when refreshing
+                                activeSort = viewState.activeSort,
+                                onSortSelected = { newSort ->
+                                    onAction(ListingUiAction.OnSortChange(newSort))
+                                })
                         }
                     }
-                    items(viewState.listings) { listing ->
-                        ListingDetailView(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(Color.Transparent)
-                                .padding(bottom = SPACING_MEDIUM.dp)
-                                .clickable {
-                                    onAction(ListingUiAction.OnListingClick(listing))
-                                },
-                            imageModifier = Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(16f / 9f),
-                            listing = listing,
-                            imageContentScale = ContentScale.FillWidth,
-                            isSelected = listing.id == viewState.selectedListing?.id
-                        )
-                    }
+                }
+                items(viewState.listings) { listing ->
+                    ListingDetailView(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color.Transparent)
+                            .padding(bottom = SPACING_MEDIUM.dp)
+                            .clickable {
+                                onAction(ListingUiAction.OnListingClick(listing))
+                            },
+                        imageModifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(16f / 9f),
+                        listing = listing,
+                        imageContentScale = ContentScale.FillWidth,
+                        isSelected = listing.id == viewState.selectedListing?.id
+                    )
                 }
             }
         }
