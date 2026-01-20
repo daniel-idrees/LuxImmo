@@ -23,7 +23,7 @@ import com.example.listings.ui.components.MainContentView
 import com.example.ui.models.DisplayDoubleValue
 import com.example.ui.models.DisplayIntValue
 import com.example.ui.models.UiErrorConfig
-import com.example.ui.util.DevicePreviews
+import com.example.ui.util.LightDarkPreviews
 import com.example.ui.util.OneTimeLaunchedEffect
 
 @Composable
@@ -71,7 +71,7 @@ private fun MainContent(
 
 
 @Composable
-@DevicePreviews
+@LightDarkPreviews
 private fun ListingDetailPreview() {
     val listing = ListingUi(
         id = 1,
@@ -91,9 +91,9 @@ private fun ListingDetailPreview() {
 }
 
 @Composable
-@DevicePreviews
+@LightDarkPreviews
 private fun ListingDetailErrorPreview() {
-    val viewState = DetailUiState(error = UiErrorConfig(errorText = "Error", onRetry = {}))
+    val viewState = DetailUiState(error = UiErrorConfig(errorText = "Listing not found"))
     LuxImmoTheme {
         MainContent(viewState = viewState)
     }
