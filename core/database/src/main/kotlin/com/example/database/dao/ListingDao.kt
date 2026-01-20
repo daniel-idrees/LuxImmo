@@ -9,6 +9,9 @@ import androidx.room.Transaction
 import com.example.database.model.ListingEntity
 import kotlinx.coroutines.flow.Flow
 
+/**
+ * DAO for [ListingEntity] access
+ */
 @Dao
 interface ListingDao {
     @Query("SELECT * FROM listings")
@@ -17,6 +20,9 @@ interface ListingDao {
     @Query("SELECT * FROM listings WHERE id = :id")
     fun getListingById(id: Int): Flow<ListingEntity?>
 
+    /**
+     * Inserts or updates [entities] in the db under the specified primary keys
+     */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertListing(listing: ListingEntity)
 
