@@ -376,7 +376,6 @@ class ListViewModelTest {
         }
     }
 
-
     // Refresh received listings initially but after a manual refresh, it receives different listing
     @Test
     fun `when repository is empty and refresh succeed with no data, manual refresh succeeds with a new data, state contains updated listings`() =
@@ -404,9 +403,13 @@ class ListViewModelTest {
                 //refresh should now get a different result that will update repo
                 listingRepository.setRefreshListingsResult(Result.Success(sampleListings))
 
+                // Introduce a delay to simulate a real network call
+                listingRepository.setRefreshListingsDelay(100) // 100ms is enough
                 // Manual refresh
                 viewModel.setAction(ListingUiAction.Refresh)
                 assertTrue(awaitItem().isRefreshing)
+
+                skipItems(1) //Sync status will update the state with finished value
 
                 // Assert Final State
                 val finalState = awaitItem()
@@ -453,17 +456,22 @@ class ListViewModelTest {
                 //refresh should now get a different result that will update repo
                 listingRepository.setRefreshListingsResult(Result.Success(updatedListing))
 
+
+                // Introduce a delay to simulate a real network call
+                listingRepository.setRefreshListingsDelay(100) // 100ms is enough
                 // Manual refresh
                 viewModel.setAction(ListingUiAction.Refresh)
                 assertTrue(awaitItem().isRefreshing)
 
+                skipItems(1) //Sync status will update the state with finished value
+
                 // Assert Final State
-                val finalState = awaitItem()
+                val finalState = awaitItem() //final state will have listings
                 assertFalse(finalState.isRefreshing)
                 assertFalse(finalState.isLoading)
 
                 val expectedUpdatedListing = updatedListing.map { it.toListingUi(resourceProvider) }
-                assertEquals(expectedUpdatedListing, finalState.listings)
+               assertEquals(expectedUpdatedListing, finalState.listings)
 
                 cancelAndIgnoreRemainingEvents()
             }
@@ -478,6 +486,7 @@ class ListViewModelTest {
             // Make the repository return success with same list
             listingRepository.setRefreshListingsResult(Result.Success(sampleListings))
 
+
             viewModel.viewState.test {
                 assertTrue(awaitItem().isLoading)
 
@@ -490,10 +499,12 @@ class ListViewModelTest {
                 assertFalse(listingsState.isRefreshing)
                 assertEquals(null, listingsState.errorConfig)
 
-
                 val expectedListing = sampleListings.map { it.toListingUi(resourceProvider) }
                 assertEquals(expectedListing, listingsState.listings)
 
+
+                // Introduce a delay to simulate a real network call
+                listingRepository.setRefreshListingsDelay(100) // 100ms is enough
                 // Manual refresh
                 viewModel.setAction(ListingUiAction.Refresh)
                 assertTrue(awaitItem().isRefreshing)
