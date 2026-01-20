@@ -1,5 +1,8 @@
 package com.example.domain.model
 
+/**
+ * A listing domain model
+ */
 data class Listing (
     val id: Int,
     val rooms: Int? = null,
