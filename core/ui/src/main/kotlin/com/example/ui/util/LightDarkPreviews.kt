@@ -6,6 +6,9 @@ import androidx.compose.ui.tooling.preview.AndroidUiModes.UI_MODE_NIGHT_YES
 import androidx.compose.ui.tooling.preview.Preview
 
 
+/**
+ * Preview annotation for render the composable in light and dark mode
+ */
 @Preview(
     name = "Light Mode Phone",
     showBackground = true,
@@ -20,6 +23,6 @@ import androidx.compose.ui.tooling.preview.Preview
     device = "spec:width=360dp,height=640dp,dpi=480",
     backgroundColor = 0xFF000000L
 )
-annotation class DevicePreviews()
+annotation class LightDarkPreviews()
 
 
