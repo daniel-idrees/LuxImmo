@@ -59,11 +59,6 @@ internal class ListingViewModel @Inject constructor(
         when (event) {
             ListingUiAction.Init -> initialise()
             ListingUiAction.Refresh -> {
-                setState {
-                    copy(
-                        isRefreshing = true
-                    )
-                }
                 refreshData()
             }
 
@@ -124,13 +119,13 @@ internal class ListingViewModel @Inject constructor(
         //keep a track on listings from use case and current sort option, then sort the list accordingly
         val sortedListingsFlow =
             getListingsUseCase()
+                .distinctUntilChanged()
                 .combine(sortOptionFlow) { listings, sortOption ->
                     listings
                         .map { it.toListingUi(resourceProvider = resourceProvider) }
                         .sortBy(sortOption)
                 }
                 .flowOn(defaultDispatcher)
-
 
         //keep a track on the final list and sync result
         val combinedDataFlow = combine(sortedListingsFlow, syncStatus) { list, status ->
