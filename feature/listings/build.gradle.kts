@@ -11,15 +11,9 @@ android {
 
 dependencies {
     //testing
-    testImplementation(libs.junit)
-    testImplementation(libs.kotlinx.coroutines.test)
-    testImplementation(libs.turbine)
-    testImplementation (libs.mockito.kotlin)
-    testImplementation(libs.mockito.core)
-    testImplementation(libs.mockito.inline)
+    testImplementation(project(":core:testing"))
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
-    testImplementation(kotlin("test"))
 }

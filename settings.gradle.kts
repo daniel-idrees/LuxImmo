@@ -30,5 +30,7 @@ include(":core:domain")
 include(":core:designsystem")
 include(":core:network")
 include(":core:ui")
+include(":core:testing")
 include(":feature")
 include(":feature:listings")
+
