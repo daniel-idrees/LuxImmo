@@ -15,6 +15,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
+/**
+ * Offline first implementation of [ListingRepository].
+ * Reads are exclusively from local storage to support offline access
+ * and writes are exclusively to local storage
+ * Refresh methods are supported to get the latest data from the network and save it locally
+ */
 internal class OfflineFirstListingRepository @Inject constructor(
     private val gslNetworkDataSource: GslNetworkDataSource,
     private val dao: ListingDao,
@@ -30,6 +36,9 @@ internal class OfflineFirstListingRepository @Inject constructor(
         dao.getListingById(listingId)
             .map { it?.asExternalModel() }
 
+    /**
+     * Refresh listings from the network and save/update them to the database
+     */
     override suspend fun refreshListings(): Result<List<Listing>> {
         runSuspendCatching {
             gslNetworkDataSource.getListings()
@@ -48,6 +57,11 @@ internal class OfflineFirstListingRepository @Inject constructor(
         )
     }
 
+    /**
+     * Refresh a single listing from the network and save/update it to the database
+     * If the listing is not found on the remote, delete it from the database
+     * @param listingId the id of the listing to refresh
+     */
     override suspend fun refreshListing(listingId: Int): Result<Listing?> {
         runSuspendCatching {
             gslNetworkDataSource.getListing(listingId)

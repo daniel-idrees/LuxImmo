@@ -5,6 +5,9 @@ import com.example.domain.model.Listing
 import com.example.domain.model.PropertyType
 import com.example.network.model.NetworkListing
 
+/**
+ * Listing entity converter from Network model to Database model
+ */
 internal fun NetworkListing.asEntity() = ListingEntity(
     id = id,
     price = price,
@@ -18,6 +21,9 @@ internal fun NetworkListing.asEntity() = ListingEntity(
     offerType = offerType
 )
 
+/**
+ * Listing model converter from Database model to Domain model
+ */
 internal fun ListingEntity.asExternalModel() = Listing(
     id = id,
     price = price,
