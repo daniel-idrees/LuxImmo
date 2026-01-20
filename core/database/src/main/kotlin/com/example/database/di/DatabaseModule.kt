@@ -20,8 +20,8 @@ internal object DatabaseModule {
     ): LuxImmoDatabase = Room.databaseBuilder(
         context,
         LuxImmoDatabase::class.java,
-        listingDatabaseName
+        luxImmmoDatabase
     ).build()
 }
 
-private const val listingDatabaseName = "listing_database"
+private const val luxImmmoDatabase = "luximmo_database"
