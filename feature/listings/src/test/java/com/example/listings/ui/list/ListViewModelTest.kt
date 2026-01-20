@@ -3,14 +3,13 @@ package com.example.listings.ui.list
 import app.cash.turbine.test
 import com.example.domain.AppError
 import com.example.domain.Result
-import com.example.domain.model.Listing
-import com.example.domain.model.PropertyType
 import com.example.domain.usecase.GetListingsUseCase
 import com.example.listings.models.toListingUi
 import com.example.listings.resource.TestResourceProvider
-import com.example.listings.testdoubles.TestListingRepository
-import com.example.listings.testdoubles.TestNetworkMonitor
-import com.example.listings.util.MainDispatcherRule
+import com.example.testing.data.listingsTestData
+import com.example.testing.repository.TestListingRepository
+import com.example.testing.util.MainDispatcherRule
+import com.example.testing.util.TestNetworkMonitor
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
@@ -35,57 +34,9 @@ class ListViewModelTest {
 
     private lateinit var viewModel: ListingViewModel
 
-    // Test data
-    private val sampleListings = listOf(
-        Listing(
-            id = 1,
-            price = 200000.0,
-            area = 100.0,
-            city = "A",
-            propertyType = PropertyType.MAISON_VILLA,
-            bedrooms = 3,
-            rooms = 5,
-            vendor = "V1",
-            offerType = 1,
-            imageUrl = ""
-        ),
-        Listing(
-            id = 2,
-            price = 100000.0,
-            area = 50.0,
-            city = "B",
-            propertyType = PropertyType.MAISON_VILLA,
-            bedrooms = 1,
-            rooms = 2,
-            vendor = "V2",
-            offerType = 2,
-            imageUrl = ""
-        ),
-        Listing(
-            id = 3,
-            price = 300000.0,
-            area = 450.0,
-            city = "C",
-            propertyType = PropertyType.MAISON_VILLA,
-            bedrooms = 1,
-            rooms = 2,
-            vendor = "V2",
-            offerType = 2,
-            imageUrl = ""
-        ),
-        Listing(
-            id = 4,
-            price = 500000.0,
-            area = 550.0,
-            city = "D",
-            propertyType = PropertyType.MAISON_VILLA,
-            bedrooms = 1,
-            rooms = 2,
-            vendor = "V2",
-            offerType = 2,
-            imageUrl = ""
-        )
-    )
+    private val testListingUi by lazy {
+        listingsTestData.map { it.toListingUi(resourceProvider) }
+    }
 
     @Before
     fun setup() {
@@ -110,9 +61,9 @@ class ListViewModelTest {
     @Test
     fun `when repository contains data and refresh succeed, state contains listings`() = runTest {
         // Send listings from the repository
-        listingRepository.sendListings(sampleListings)
+        listingRepository.sendListings(listingsTestData)
         // Make the repository return success
-        listingRepository.setRefreshListingsResult(Result.Success(sampleListings))
+        listingRepository.setRefreshListingsResult(Result.Success(listingsTestData))
 
         viewModel.viewState.test {
             assertTrue(awaitItem().isLoading)
@@ -124,7 +75,7 @@ class ListViewModelTest {
             val listingsState = awaitItem()
             assertFalse(listingsState.isLoading)
             assertEquals(null, listingsState.errorConfig)
-            val expectedListing = sampleListings.map { it.toListingUi(resourceProvider) }
+            val expectedListing = testListingUi
             assertEquals(expectedListing, listingsState.listings)
 
             cancelAndIgnoreRemainingEvents()
@@ -135,9 +86,9 @@ class ListViewModelTest {
     fun `when repository contains data and refresh succeed with a different data, state contains updated listings`() =
         runTest {
             // Send listings from the repository
-            listingRepository.sendListings(sampleListings)
+            listingRepository.sendListings(listingsTestData)
 
-            val updatedListing = sampleListings.map {
+            val updatedListing = listingsTestData.map {
                 it.copy(
                     price = it.price + 500000 //imagine aur listings have updated price
                 )
@@ -170,7 +121,7 @@ class ListViewModelTest {
             // Clear the repository
             listingRepository.sendListings(emptyList())
             // Make the repository fail
-            listingRepository.setRefreshListingsResult(Result.Success(sampleListings))
+            listingRepository.setRefreshListingsResult(Result.Success(listingsTestData))
 
             viewModel.viewState.test {
                 // Initial loading state
@@ -184,7 +135,7 @@ class ListViewModelTest {
                 // Assert
                 assertFalse(listingsState.isLoading)
                 assertEquals(null, listingsState.errorConfig)
-                val expectedListing = sampleListings.map { it.toListingUi(resourceProvider) }
+                val expectedListing = testListingUi
                 assertEquals(expectedListing, listingsState.listings)
 
                 cancelAndIgnoreRemainingEvents()
@@ -197,7 +148,7 @@ class ListViewModelTest {
             // Clear the repository
             listingRepository.sendListings(emptyList())
             // Make the repository fail
-            listingRepository.setRefreshListingsResult(Result.Success(sampleListings))
+            listingRepository.setRefreshListingsResult(Result.Success(listingsTestData))
             // Make the repository delay the sync
             listingRepository.setRefreshListingsDelay(5000)
 
@@ -225,7 +176,7 @@ class ListViewModelTest {
 
                 val finalState = awaitItem()
 
-                val expectedListing = sampleListings.map { it.toListingUi(resourceProvider) }
+                val expectedListing = testListingUi
                 assertEquals(expectedListing, finalState.listings)
 
                 cancelAndIgnoreRemainingEvents()
@@ -297,7 +248,7 @@ class ListViewModelTest {
     fun `when repository returns data but refresh fails with no internet error, effect shows snackbar`() =
         runTest {
             // Arrange: First, successfully load data into the cache
-            listingRepository.sendListings(sampleListings)
+            listingRepository.sendListings(listingsTestData)
             // Now, make the next refresh fail
             listingRepository.setRefreshListingsResult(Result.Error(AppError.NoInternetConnection))
 
@@ -316,7 +267,7 @@ class ListViewModelTest {
             assertFalse(viewModel.viewState.value.isLoading)
             assertFalse(viewModel.viewState.value.isRefreshing)
             assertNull(viewModel.viewState.value.errorConfig)
-            val expectedList = sampleListings.map { it.toListingUi(resourceProvider) }
+            val expectedList = testListingUi
             assertEquals(expectedList, viewModel.viewState.value.listings)
         }
 
@@ -326,7 +277,7 @@ class ListViewModelTest {
     fun `when repository returns data but refresh fails with no unknown error, effect shows snackbar`() =
         runTest {
             // Arrange: First, successfully load data into the cache
-            listingRepository.sendListings(sampleListings)
+            listingRepository.sendListings(listingsTestData)
             // Now, make the next refresh fail
             listingRepository.setRefreshListingsResult(Result.Error(AppError.Unknown))
 
@@ -347,7 +298,7 @@ class ListViewModelTest {
             assertFalse(viewModel.viewState.value.isLoading)
             assertFalse(viewModel.viewState.value.isRefreshing)
             assertNull(viewModel.viewState.value.errorConfig)
-            val expectedList = sampleListings.map { it.toListingUi(resourceProvider) }
+            val expectedList = testListingUi
             assertEquals(expectedList, viewModel.viewState.value.listings)
         }
 
@@ -401,7 +352,7 @@ class ListViewModelTest {
                 assertEquals(emptyList(), listingsState.listings)
 
                 //refresh should now get a different result that will update repo
-                listingRepository.setRefreshListingsResult(Result.Success(sampleListings))
+                listingRepository.setRefreshListingsResult(Result.Success(listingsTestData))
 
                 // Introduce a delay to simulate a real network call
                 listingRepository.setRefreshListingsDelay(100) // 100ms is enough
@@ -415,7 +366,7 @@ class ListViewModelTest {
                 val finalState = awaitItem()
                 assertFalse(finalState.isRefreshing)
                 assertFalse(finalState.isLoading)
-                val expectedListing = sampleListings.map { it.toListingUi(resourceProvider) }
+                val expectedListing = testListingUi
                 assertEquals(expectedListing, finalState.listings)
 
                 cancelAndIgnoreRemainingEvents()
@@ -427,11 +378,11 @@ class ListViewModelTest {
     fun `when manual refresh succeeds with a different data, state contains updated listings`() =
         runTest {
             // Send listings from the repository
-            listingRepository.sendListings(sampleListings)
+            listingRepository.sendListings(listingsTestData)
             // Make the repository return success with same list
-            listingRepository.setRefreshListingsResult(Result.Success(sampleListings))
+            listingRepository.setRefreshListingsResult(Result.Success(listingsTestData))
 
-            val updatedListing = sampleListings.map {
+            val updatedListing = listingsTestData.map {
                 it.copy(
                     price = it.price + 500000 //imagine aur listings have updated price
                 )
@@ -450,7 +401,7 @@ class ListViewModelTest {
                 assertEquals(null, listingsState.errorConfig)
 
 
-                val expectedListing = sampleListings.map { it.toListingUi(resourceProvider) }
+                val expectedListing = testListingUi
                 assertEquals(expectedListing, listingsState.listings)
 
                 //refresh should now get a different result that will update repo
@@ -482,9 +433,9 @@ class ListViewModelTest {
     fun `when manual refresh succeeds with the same data, state contains same initial listings`() =
         runTest {
             // Send listings from the repository
-            listingRepository.sendListings(sampleListings)
+            listingRepository.sendListings(listingsTestData)
             // Make the repository return success with same list
-            listingRepository.setRefreshListingsResult(Result.Success(sampleListings))
+            listingRepository.setRefreshListingsResult(Result.Success(listingsTestData))
 
 
             viewModel.viewState.test {
@@ -499,7 +450,7 @@ class ListViewModelTest {
                 assertFalse(listingsState.isRefreshing)
                 assertEquals(null, listingsState.errorConfig)
 
-                val expectedListing = sampleListings.map { it.toListingUi(resourceProvider) }
+                val expectedListing = testListingUi
                 assertEquals(expectedListing, listingsState.listings)
 
 
@@ -524,9 +475,9 @@ class ListViewModelTest {
     fun `during manual refresh, only refresh loader should be visible no and no main loader if listings are available in state`() =
         runTest {
             // Keep the data ready
-            listingRepository.sendListings(sampleListings)
+            listingRepository.sendListings(listingsTestData)
             // Make the repository fail
-            listingRepository.setRefreshListingsResult(Result.Success(sampleListings))
+            listingRepository.setRefreshListingsResult(Result.Success(listingsTestData))
 
             viewModel.viewState.test {
                 // Initial loading state
@@ -537,7 +488,7 @@ class ListViewModelTest {
 
                 val initialState = awaitItem()
 
-                val expectedListings = sampleListings.map { it.toListingUi(resourceProvider) }
+                val expectedListings = testListingUi
                 assertEquals(expectedListings, initialState.listings)
 
                 // Make the repository delay the sync
@@ -560,13 +511,13 @@ class ListViewModelTest {
     fun `when state contains listing, OnListingClick action should update state with selected listing and navigate to detail`() =
         runTest {
             // Send listings from the repository
-            listingRepository.sendListings(sampleListings)
+            listingRepository.sendListings(listingsTestData)
             // Make the repository return success
-            listingRepository.setRefreshListingsResult(Result.Success(sampleListings))
+            listingRepository.setRefreshListingsResult(Result.Success(listingsTestData))
 
             // Init
             viewModel.setAction(ListingUiAction.Init)
-            val listingToSelect = sampleListings.first().toListingUi(resourceProvider)
+            val listingToSelect = listingsTestData.first().toListingUi(resourceProvider)
 
             // Act: Select a listing
             viewModel.setAction(ListingUiAction.OnListingClick(listingToSelect))
@@ -588,14 +539,14 @@ class ListViewModelTest {
     fun `when state contains listing and a selected listing, RemoveSelection action should remove the selected listing in the state`() =
         runTest {
             // Keep the data ready
-            listingRepository.sendListings(sampleListings)
+            listingRepository.sendListings(listingsTestData)
             // Make the repository return success
-            listingRepository.setRefreshListingsResult(Result.Success(sampleListings))
+            listingRepository.setRefreshListingsResult(Result.Success(listingsTestData))
 
             // Init
             viewModel.setAction(ListingUiAction.Init)
 
-            val listingToSelect = sampleListings.first().toListingUi(resourceProvider)
+            val listingToSelect = listingsTestData.first().toListingUi(resourceProvider)
             // select a listing
             viewModel.setAction(ListingUiAction.OnListingClick(listingToSelect))
 
@@ -626,7 +577,7 @@ class ListViewModelTest {
             assertNotNull((awaitItem().errorConfig))
 
             // Ensure the next refresh will succeed
-            listingRepository.setRefreshListingsResult(Result.Success(sampleListings))
+            listingRepository.setRefreshListingsResult(Result.Success(listingsTestData))
             // Simulate network coming back online
             networkMonitor.setIsOnline(true)
 
@@ -641,7 +592,7 @@ class ListViewModelTest {
             assertFalse(finalState.isLoading) //loader is not present
             assertEquals(null, finalState.errorConfig) // error is gone
 
-            val expectedListing = sampleListings.map { it.toListingUi(resourceProvider) }
+            val expectedListing = testListingUi
             assertEquals(expectedListing, finalState.listings)
 
             cancelAndIgnoreRemainingEvents()
@@ -651,7 +602,7 @@ class ListViewModelTest {
     @Test
     fun `when sort option changes to price asc, list is sorted`() = runTest {
         // Keep the data ready
-        listingRepository.sendListings(sampleListings)
+        listingRepository.sendListings(listingsTestData)
 
         // Init
         viewModel.setAction(ListingUiAction.Init)
@@ -659,7 +610,7 @@ class ListViewModelTest {
         viewModel.viewState.test {
             // Initial default-sorted list
             val initialList = awaitItem().listings
-            assertEquals(sampleListings[0].id, initialList[0].id)
+            assertEquals(listingsTestData[0].id, initialList[0].id)
 
             // Change sort option to Price Ascending
             viewModel.setAction(ListingUiAction.OnSortChange(ListingSortOption.PriceAsc))
@@ -670,7 +621,7 @@ class ListViewModelTest {
             // Assert
             val sortedList = awaitItem().listings
             assertEquals(
-                sampleListings[1].id, // listing on index has lower price and should be first
+                listingsTestData[1].id, // listing on index has lower price and should be first
                 sortedList[0].id
             )
         }
@@ -679,7 +630,7 @@ class ListViewModelTest {
     @Test
     fun `when sort option changes to price desc, list is sorted`() = runTest {
         // Keep the data ready
-        listingRepository.sendListings(sampleListings)
+        listingRepository.sendListings(listingsTestData)
 
         // Init
         viewModel.setAction(ListingUiAction.Init)
@@ -687,7 +638,7 @@ class ListViewModelTest {
         viewModel.viewState.test {
             // Initial default-sorted list
             val initialList = awaitItem().listings
-            assertEquals(sampleListings[0].id, initialList[0].id)
+            assertEquals(listingsTestData[0].id, initialList[0].id)
 
             // Change sort option to Price Descending
             viewModel.setAction(ListingUiAction.OnSortChange(ListingSortOption.PriceDesc))
@@ -698,7 +649,7 @@ class ListViewModelTest {
             // Assert
             val sortedList = awaitItem().listings
             assertEquals(
-                sampleListings[3].id, // Listing on index 3 has higher price and should be first
+                listingsTestData[3].id, // Listing on index 3 has higher price and should be first
                 sortedList[0].id
             )
         }
@@ -706,7 +657,7 @@ class ListViewModelTest {
 
     @Test
     fun `when sort option changes to price per m2 desc, and further price desc to tie break, list is sorted`() = runTest {
-        listingRepository.sendListings(sampleListings)
+        listingRepository.sendListings(listingsTestData)
         viewModel.setAction(ListingUiAction.Init)
 
         viewModel.viewState.test {
@@ -728,7 +679,7 @@ class ListViewModelTest {
 
     @Test
     fun `when sort option changes to price per m2 asc, and further price asc to tie break, list is sorted`() = runTest {
-        listingRepository.sendListings(sampleListings)
+        listingRepository.sendListings(listingsTestData)
         viewModel.setAction(ListingUiAction.Init)
 
         viewModel.viewState.test {
@@ -752,7 +703,7 @@ class ListViewModelTest {
     fun `when sort option changes to other option and then to default, actual order of the list is restored`() =
         runTest {
             // Keep the data ready
-            listingRepository.sendListings(sampleListings)
+            listingRepository.sendListings(listingsTestData)
 
             // Init
             viewModel.setAction(ListingUiAction.Init)
@@ -760,7 +711,7 @@ class ListViewModelTest {
             viewModel.viewState.test {
                 // Initial default-sorted list
                 val initialList = awaitItem().listings
-                assertEquals(sampleListings[0].id, initialList[0].id) // Listing with ID 1 is first
+                assertEquals(listingsTestData[0].id, initialList[0].id) // Listing with ID 1 is first
 
                 // Change sort option to Price Ascending
                 viewModel.setAction(ListingUiAction.OnSortChange(ListingSortOption.PriceAsc))
@@ -771,7 +722,7 @@ class ListViewModelTest {
                 // Assert
                 val sortedList = awaitItem().listings
                 assertEquals(
-                    sampleListings[1].id, // Listing on index 1 has lowest area and should be first
+                    listingsTestData[1].id, // Listing on index 1 has lowest area and should be first
                     sortedList[0].id
                 ) // Listing with ID 2 has lower area and should be first
 
@@ -783,7 +734,7 @@ class ListViewModelTest {
                 // Assert
                 val defaultOrderList = awaitItem().listings
                 assertEquals(
-                    sampleListings[0].id,
+                    listingsTestData[0].id,
                     defaultOrderList[0].id
                 )
             }

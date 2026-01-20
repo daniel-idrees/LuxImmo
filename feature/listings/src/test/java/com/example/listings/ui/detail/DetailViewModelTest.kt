@@ -3,13 +3,12 @@ package com.example.listings.ui.detail
 import app.cash.turbine.test
 import com.example.domain.AppError
 import com.example.domain.Result
-import com.example.domain.model.Listing
-import com.example.domain.model.PropertyType
 import com.example.domain.usecase.GetListingDetailUseCase
 import com.example.listings.models.toListingUi
 import com.example.listings.resource.TestResourceProvider
-import com.example.listings.testdoubles.TestListingRepository
-import com.example.listings.util.MainDispatcherRule
+import com.example.testing.data.testListingData
+import com.example.testing.repository.TestListingRepository
+import com.example.testing.util.MainDispatcherRule
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Rule
@@ -30,24 +29,11 @@ class DetailViewModelTest {
 
     @Before
     fun setup() {
-        viewModel = DetailViewModel(useCase, resourceProvider, sampleListing.id)
+        viewModel = DetailViewModel(useCase, resourceProvider, testListingData.id)
     }
 
-    private val sampleListing = Listing(
-        id = 1,
-        price = 1500000.0,
-        area = 250.0,
-        city = "Paris",
-        bedrooms = 4,
-        rooms = 8,
-        imageUrl = "https://example.com/image.jpg",
-        propertyType = PropertyType.MAISON_VILLA,
-        vendor = "Luxe Properties",
-        offerType = 1
-    )
-
-    private val sampleListingUi by lazy {
-        sampleListing.toListingUi(resourceProvider)
+    private val testListingUi by lazy {
+        testListingData.toListingUi(resourceProvider)
     }
 
     @Test
@@ -58,9 +44,9 @@ class DetailViewModelTest {
     @Test
     fun `when repository returns data and refresh is success, state shows content`() = runTest {
         // The repository will successfully find the item on refresh
-        listingRepository.setRefreshListingResult(Result.Success(sampleListing))
+        listingRepository.setRefreshListingResult(Result.Success(testListingData))
         // simulate DAO emitting the listing by sending it to the test repository's flow
-        listingRepository.sendListings(listOf(sampleListing))
+        listingRepository.sendListings(listOf(testListingData))
 
         viewModel.viewState.test {
 
@@ -73,7 +59,7 @@ class DetailViewModelTest {
             val finalState = awaitItem()
             assertFalse(finalState.isLoading)
             assertNull(finalState.error)
-            assertEquals(sampleListingUi, finalState.listing)
+            assertEquals(testListingUi, finalState.listing)
         }
     }
 
@@ -82,7 +68,7 @@ class DetailViewModelTest {
 
         // refresh result will be error but repository will return data
         listingRepository.setRefreshListingResult(Result.Error(AppError.NoInternetConnection))
-        listingRepository.sendListings(listOf(sampleListing))
+        listingRepository.sendListings(listOf(testListingData))
 
         viewModel.viewState.test {
             assertTrue(awaitItem().isLoading)
@@ -94,7 +80,7 @@ class DetailViewModelTest {
             val finalState = awaitItem()
             assertFalse(finalState.isLoading)
             assertNull(finalState.error)
-            assertEquals(sampleListingUi, finalState.listing)
+            assertEquals(testListingUi, finalState.listing)
         }
     }
 
@@ -102,7 +88,7 @@ class DetailViewModelTest {
     fun `when repository was empty initially but refresh is success with data, state will wait and show data from repository`() =
         runTest {
             // The repository will successfully find the item on refresh
-            listingRepository.setRefreshListingResult(Result.Success(sampleListing))
+            listingRepository.setRefreshListingResult(Result.Success(testListingData))
 
             viewModel.viewState.test {
                 assertTrue(awaitItem().isLoading)
@@ -114,7 +100,7 @@ class DetailViewModelTest {
                 val finalState = awaitItem()
                 assertFalse(finalState.isLoading)
                 assertNull(finalState.error)
-                assertEquals(sampleListingUi, finalState.listing)
+                assertEquals(testListingUi, finalState.listing)
             }
         }
 
@@ -125,7 +111,7 @@ class DetailViewModelTest {
             // refresh will succeed but find nothing
             listingRepository.setRefreshListingResult(Result.Success(null))
             // populate repository with cached data
-            listingRepository.sendListings(listOf(sampleListing))
+            listingRepository.sendListings(listOf(testListingData))
 
             viewModel.viewState.test {
                 assertTrue(awaitItem().isLoading)
@@ -147,14 +133,14 @@ class DetailViewModelTest {
     fun `when repository returns data and refresh is success with different data, state shows latest one`() =
         runTest {
 
-            val sampleListingWithPriceIncrease = sampleListing.copy(
+            val sampleListingWithPriceIncrease = testListingData.copy(
                 price = 9500000.0,  //imagine price increased
             )
 
             // refresh will succeed with a different data
             listingRepository.setRefreshListingResult(Result.Success(sampleListingWithPriceIncrease))
             // populate repository with cached data
-            listingRepository.sendListings(listOf(sampleListing))
+            listingRepository.sendListings(listOf(testListingData))
 
             viewModel.viewState.test {
                 assertTrue(awaitItem().isLoading)
