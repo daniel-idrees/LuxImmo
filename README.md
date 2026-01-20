@@ -6,14 +6,8 @@ A luxury real estate listing app which shows available list and then it's detail
 
 LuxImmo is a sample Android application designed to showcase a modern, offline-first architecture using 100% Kotlin and Jetpack Compose. It serves as a technical demonstration of best practices in Android development, including clean architecture, a reactive MVI pattern, advanced Gradle configuration, and a robust testing strategy.
 
-<br>
+https://github.com/user-attachments/assets/abd905c4-365b-4345-b852-500928f62ed1
 
-<!-- TODO: Add a GIF or screenshot of the app in action -->
-<!-- 
-<p align="center">
-  <img src="art/app_demo.gif" width="300"/>
-</p> 
--->
 
 ## Architecture
 
