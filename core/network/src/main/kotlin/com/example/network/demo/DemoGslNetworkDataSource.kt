@@ -12,8 +12,8 @@ import kotlinx.serialization.json.decodeFromStream
 import javax.inject.Inject
 
 /**
- * This is a test-only implementation of the [GslNetworkDataSource] that uses local JSON files
- * as a data source. It is shared via `testFixtures`.
+ *  [GslNetworkDataSource] implementation that that uses local JSON files as a data source
+ *  to provide static data for testing purposes.
  */
 class DemoGslNetworkDataSource @Inject constructor(
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,

@@ -2,7 +2,10 @@ package com.example.network.model
 
 import kotlinx.serialization.Serializable
 
-@OptIn(kotlinx.serialization.InternalSerializationApi::class)
+
+/**
+ * Network representation of a [com.example.domain.model.Listing]
+ */
 @Serializable
 data class NetworkListing (
     val bedrooms: Int? = null,

@@ -15,7 +15,7 @@ import javax.inject.Singleton
 /**
  * Retrofit API declaration for Gsl Network API
  */
-interface RetrofitGslNetworkApi {
+internal interface RetrofitGslNetworkApi {
     @GET("/listings.json")
     suspend fun getListings(): NetworkListingsResponse
 
@@ -29,13 +29,18 @@ interface RetrofitGslNetworkApi {
  * [Retrofit] backed [GslNetworkDataSource]
  */
 @Singleton
-class RetrofitGslApiClient @Inject constructor(
+internal class RetrofitGslApiClient @Inject constructor(
     private val networkApi: RetrofitGslNetworkApi
 ) : GslNetworkDataSource {
 
     override suspend fun getListings(): NetworkListingsResponse =
         networkApi.getListings()
 
+    /**
+     * If the network returns code 403 or 404, we assume that listing is not found
+     * hence, we return null
+     * For other network errors, HttpException is thrown
+     */
     override suspend fun getListing(id: Int): NetworkListing? {
         val response = networkApi.getListing(id = id)
         return when {
