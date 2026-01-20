@@ -33,7 +33,7 @@ import com.example.listings.ui.components.SortingDropdownButton
 import com.example.ui.models.DisplayDoubleValue
 import com.example.ui.models.DisplayIntValue
 import com.example.ui.models.UiErrorConfig
-import com.example.ui.util.DevicePreviews
+import com.example.ui.util.LightDarkPreviews
 import com.example.ui.util.OneTimeLaunchedEffect
 
 @Composable
@@ -134,7 +134,7 @@ private fun MainContent(
 }
 
 @Composable
-@DevicePreviews
+@LightDarkPreviews
 private fun ListingPreview() {
     val list = listOf(
         ListingUi(
@@ -167,7 +167,49 @@ private fun ListingPreview() {
 }
 
 @Composable
-@DevicePreviews
+@LightDarkPreviews
+private fun ListingWithSyncInProgressPreview() {
+    val list = listOf(
+        ListingUi(
+            id = 1,
+            price = DisplayDoubleValue(value = 1500000.0, formatted = "1 500 000 €"),
+            pricePerSquareMeter = DisplayDoubleValue(value = 6000.0, formatted = "6 000 €/m²"),
+            rooms = DisplayIntValue(value = 8, formatted = "8 rooms"),
+            bedrooms = DisplayIntValue(value = 4, formatted = "4 bedrooms"),
+            city = "Villers-sur-Mer",
+            area = DisplayDoubleValue(value = 250.0, formatted = "250.0 m²"),
+            imageUrl = "https://v.seloger.com/s/crop/590x330/visuels/1/7/t/3/17t3fitclms3bzwv8qshbyzh9dw32e9l0p0udr80k.jpg",
+            vendor = "GSL EXPLORE", propertyType = "Maison - Villa"
+        ),
+        ListingUi(
+            id = 2,
+            price = DisplayDoubleValue(value = 1500000.0, formatted = "1 500 000 €"),
+            pricePerSquareMeter = DisplayDoubleValue(value = 6000.0, formatted = "6 000 €/m²"),
+            rooms = DisplayIntValue(value = 8, formatted = "8 rooms"),
+            bedrooms = DisplayIntValue(value = 4, formatted = "4 bedrooms"),
+            city = "Villers-sur-Mer",
+            area = DisplayDoubleValue(value = 250.0, formatted = "250.0 m²"),
+            imageUrl = "https://v.seloger.com/s/crop/590x330/visuels/1/7/t/3/17t3fitclms3bzwv8qshbyzh9dw32e9l0p0udr80k.jpg",
+            vendor = "GSL EXPLORE", propertyType = "Maison - Villa"
+        )
+    )
+    val viewState = ListingUiState(listings = list, isRefreshing = true) //TODO preview parameter
+    LuxImmoTheme {
+        MainContent(viewState, onAction = {})
+    }
+}
+
+@Composable
+@LightDarkPreviews
+private fun ListingEmptyPreview() {
+    val viewState = ListingUiState(isLoading = false)
+    LuxImmoTheme {
+        MainContent(viewState, onAction = {})
+    }
+}
+
+@Composable
+@LightDarkPreviews
 private fun ListingErrorPreview() {
     val viewState = ListingUiState(
         errorConfig = UiErrorConfig(errorText = "Something went wrong", {})
