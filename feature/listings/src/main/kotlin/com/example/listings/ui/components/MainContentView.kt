@@ -10,6 +10,10 @@ import com.example.ui.components.GenericErrorView
 import com.example.ui.components.LoadingView
 import com.example.ui.models.UiErrorConfig
 
+/**
+ * Main content container that handles loading and error states.
+ * Main content is only shown if the state is not loading or error.
+ */
 @Composable
 internal fun MainContentView(
     isLoading: Boolean,

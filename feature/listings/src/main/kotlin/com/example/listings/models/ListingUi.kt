@@ -8,6 +8,9 @@ import com.example.ui.models.DisplayIntValue
 import com.example.ui.resource.ResourceProvider
 import java.util.Locale
 
+/**
+ * UI model for a [Listing] to be displayed in the UI.
+ */
 internal data class ListingUi(
     val id: Int,
     val price: DisplayDoubleValue,
@@ -21,6 +24,9 @@ internal data class ListingUi(
     val propertyType: String,
 )
 
+/**
+ * Extension function to convert a [Listing] to a [ListingUi]
+ */
 internal fun Listing.toListingUi(resourceProvider: ResourceProvider): ListingUi =
     ListingUi(
         id = id,
@@ -34,7 +40,6 @@ internal fun Listing.toListingUi(resourceProvider: ResourceProvider): ListingUi 
         vendor = vendor,
         propertyType = propertyType.value,
     )
-
 
 private fun Listing.toDisplayValueRooms(resourceProvider: ResourceProvider): DisplayIntValue? =
     rooms?.let { rooms ->

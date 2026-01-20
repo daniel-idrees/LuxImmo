@@ -43,6 +43,11 @@ internal class ListingViewModel @Inject constructor(
 
     private val syncResult = MutableStateFlow<SyncStatus>(SyncStatus.NotStarted)
 
+    private fun initialise() {
+        loadData()
+        observeAndHandleNetworkState()
+    }
+
     override fun setInitialState(): ListingUiState = ListingUiState(isLoading = true)
 
     override fun handleAction(event: ListingUiAction) {
@@ -73,11 +78,10 @@ internal class ListingViewModel @Inject constructor(
         }
     }
 
-    private fun initialise() {
-        loadData()
-        observeAndHandleNetworkState()
-    }
-
+    /**
+     * It observes network status, waits for 1sec
+     * Starts refreshing the data only if the internet is back and sync failed previously
+     */
     private fun observeAndHandleNetworkState() {
         viewModelScope.launch {
             networkMonitor.isOnline
@@ -97,6 +101,15 @@ internal class ListingViewModel @Inject constructor(
         }
     }
 
+
+    /**
+     * Start refreshing the data in the beginning only once
+     * Start collecting data from use case and sort option in the view state
+     * combines use case result and sort option to sort the list result
+     * Combines the sorted list with the sync result to prepare the view state
+     * Updates view state on the basis of listing availability and sync result
+     * If the listing was available not sync failed, error effect will be sent
+     */
     private fun loadData() {
         val sortOptionFlow = viewState
             .mapLatest { it.activeSort }
