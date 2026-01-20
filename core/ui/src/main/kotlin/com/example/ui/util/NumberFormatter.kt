@@ -4,7 +4,7 @@ import java.text.NumberFormat
 import java.util.Locale
 
 /**
- * Formats a Double into a currency string.
+ * Formats a Double into a currency string with no decimal digits.
  * Defaults to France/Euro but can be overridden.
  */
 fun Double.toCurrency(locale: Locale = Locale.FRANCE): String {

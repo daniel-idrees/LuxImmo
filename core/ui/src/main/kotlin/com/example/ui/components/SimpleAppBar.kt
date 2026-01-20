@@ -13,7 +13,9 @@ import com.example.designsystem.icon.LuxImmoIcon
 import com.example.designsystem.icon.LuxImmoIcons
 import com.example.designsystem.util.ICON_SIZE_LARGE
 
-
+/**
+ * TopAppBar with a back icon button
+ */
 @Composable
 fun SimpleAppBar(
     title: String = "",

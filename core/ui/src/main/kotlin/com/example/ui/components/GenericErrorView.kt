@@ -1,6 +1,5 @@
 package com.example.ui.components
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +16,9 @@ import com.example.designsystem.icon.LuxImmoIcons
 import com.example.designsystem.util.ICON_SIZE_LARGE
 import com.example.designsystem.util.SPACING_SMALL
 
+/**
+ * Common Generic Error View Container that display an error message and an optional retry button
+ */
 @Composable
 fun GenericErrorView(
     modifier: Modifier,

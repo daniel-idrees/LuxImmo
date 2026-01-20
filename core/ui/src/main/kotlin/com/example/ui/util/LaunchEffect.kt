@@ -25,6 +25,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 
+/**
+* Executes the given [block] exactly once, surviving configuration changes
+* and process death
+*/
 @Composable
 fun OneTimeLaunchedEffect(
     block: () -> Unit
