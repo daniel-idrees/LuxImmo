@@ -732,8 +732,8 @@ class ListViewModelTest {
             val sortedList = awaitItem().listings
             // ID 3 has 666 per m2 (Lowest)
             assertEquals(3, sortedList[0].id)
-            // ID 1 or 2 have 2,000 per m2 (Highest) but ID 2 cheaper than ID 1, then ID 2 should be last
-            assertEquals(2, sortedList.last().id)
+            // ID 1 or 2 have 2,000 per m2 (Highest) but ID 2 is cheaper than ID 1, then ID 1 should be last
+            assertEquals(1, sortedList.last().id)
         }
     }
 

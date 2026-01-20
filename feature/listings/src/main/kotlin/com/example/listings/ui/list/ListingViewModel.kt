@@ -156,11 +156,11 @@ internal class ListingViewModel @Inject constructor(
             // After asc price per meter value, sort by price if same price per meter value
             ListingSortOption.PricePerSquareMeterAsc -> this.sortedWith(
                 compareBy<ListingUi> { it.pricePerSquareMeter.value }
-                    .thenBy { it.pricePerSquareMeter.value })
+                    .thenBy { it.price.value })
             // After desc price per meter value, sort desc by price if same price per meter value
             ListingSortOption.PricePerSquareMeterDesc -> this.sortedWith(
                 compareByDescending<ListingUi> { it.pricePerSquareMeter.value }
-                    .thenByDescending { it.pricePerSquareMeter.value }
+                    .thenByDescending { it.price.value }
             )
         }
 
