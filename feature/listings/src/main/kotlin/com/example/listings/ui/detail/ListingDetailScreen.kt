@@ -1,5 +1,6 @@
 package com.example.listings.ui.detail
 
+import androidx.annotation.VisibleForTesting
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -36,11 +38,12 @@ internal fun ListingDetailScreen(
         viewModel.initialise()
     }
 
-    MainContent(viewState = viewState)
+    ListingDetailScreen(viewState = viewState)
 }
 
+@VisibleForTesting
 @Composable
-private fun MainContent(
+internal fun ListingDetailScreen(
     viewState: DetailUiState,
 ) {
     MainContentView(
@@ -57,10 +60,12 @@ private fun MainContent(
                 ListingDetailView(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color.Transparent),
+                        .background(Color.Transparent)
+                        .testTag("listing_detail"),
                     imageModifier = Modifier
                         .fillMaxWidth()
-                        .height(400.dp),
+                        .height(400.dp)
+                        .testTag("listing_image"),
                     listing = listing,
                     imageContentScale = ContentScale.FillBounds
                 )
@@ -86,7 +91,7 @@ private fun ListingDetailPreview() {
     )
     val viewState = DetailUiState(listing = listing)
     LuxImmoTheme {
-        MainContent(viewState = viewState)
+        ListingDetailScreen(viewState = viewState)
     }
 }
 
@@ -95,6 +100,6 @@ private fun ListingDetailPreview() {
 private fun ListingDetailErrorPreview() {
     val viewState = DetailUiState(error = UiErrorConfig(errorText = "Listing not found"))
     LuxImmoTheme {
-        MainContent(viewState = viewState)
+        ListingDetailScreen(viewState = viewState)
     }
 }
