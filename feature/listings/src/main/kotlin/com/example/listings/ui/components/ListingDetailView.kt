@@ -2,6 +2,7 @@ package com.example.listings.ui.components
 
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,9 +16,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import com.example.listings.models.ListingUi
 import com.example.designsystem.util.SPACING_MEDIUM
 import com.example.designsystem.util.SPACING_SMALL
+import com.example.listings.models.ListingUi
 
 @Composable
 internal fun ListingDetailView(
@@ -51,7 +52,7 @@ internal fun ListingDetailView(
         ) {
 
             ListingImageView(
-                modifier = imageModifier,
+                modifier = imageModifier.background(Color.LightGray),
                 imageUrl = listing.imageUrl,
                 contentScale = imageContentScale
             )
