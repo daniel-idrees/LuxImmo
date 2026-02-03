@@ -7,6 +7,10 @@ plugins {
 android {
     namespace = "com.example.luximmo.feature.listings"
     testOptions.unitTests.isIncludeAndroidResources = true
+    testOptions.targetSdk = 36
+    defaultConfig {
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
 }
 
 dependencies {

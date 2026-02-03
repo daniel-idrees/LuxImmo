@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.example.designsystem.util.SPACING_SMALL
 import com.example.ui.components.GenericErrorView
@@ -23,7 +24,9 @@ internal fun MainContentView(
     when {
         isLoading -> {
             LoadingView(
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .fillMaxSize()
+                    .testTag("loader")
             )
         }
 
@@ -31,7 +34,8 @@ internal fun MainContentView(
             GenericErrorView(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(horizontal = SPACING_SMALL.dp),
+                    .padding(horizontal = SPACING_SMALL.dp)
+                    .testTag("error_view"),
                 errorText = errorConfig.errorText,
                 onRetry = errorConfig.onRetry
             )

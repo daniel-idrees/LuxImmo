@@ -1,5 +1,6 @@
 package com.example.listings.ui.list
 
+import androidx.annotation.VisibleForTesting
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -19,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -51,14 +53,15 @@ internal fun ListingScreen(
         listingViewModel.setAction(ListingUiAction.RemoveSelection)
     }
 
-    MainContent(
+    ListingScreen(
         viewState = viewState,
         onAction = listingViewModel::setAction
     )
 }
 
+@VisibleForTesting
 @Composable
-private fun MainContent(
+internal fun ListingScreen(
     viewState: ListingUiState,
     onAction: (ListingUiAction) -> Unit
 ) {
@@ -103,6 +106,7 @@ private fun MainContent(
 
                         if (itemCount > 0) {
                             SortingDropdownButton(
+                                modifier = Modifier.testTag("sorting_dropdown"),
                                 enabled = !viewState.isRefreshing, //do not allow click when refreshing
                                 activeSort = viewState.activeSort,
                                 onSortSelected = { newSort ->
@@ -119,10 +123,12 @@ private fun MainContent(
                             .padding(bottom = SPACING_MEDIUM.dp)
                             .clickable {
                                 onAction(ListingUiAction.OnListingClick(listing))
-                            },
+                            }
+                            .testTag("listing_${listing.id}"),
                         imageModifier = Modifier
                             .fillMaxWidth()
-                            .aspectRatio(16f / 9f),
+                            .aspectRatio(16f / 9f)
+                            .testTag("listing_image_${listing.id}"),
                         listing = listing,
                         imageContentScale = ContentScale.FillWidth,
                         isSelected = listing.id == viewState.selectedListing?.id
@@ -162,7 +168,7 @@ private fun ListingPreview() {
     )
     val viewState = ListingUiState(listings = list) //TODO preview parameter
     LuxImmoTheme {
-        MainContent(viewState, onAction = {})
+        ListingScreen(viewState, onAction = {})
     }
 }
 
@@ -195,7 +201,7 @@ private fun ListingWithSyncInProgressPreview() {
     )
     val viewState = ListingUiState(listings = list, isRefreshing = true) //TODO preview parameter
     LuxImmoTheme {
-        MainContent(viewState, onAction = {})
+        ListingScreen(viewState, onAction = {})
     }
 }
 
@@ -204,7 +210,7 @@ private fun ListingWithSyncInProgressPreview() {
 private fun ListingEmptyPreview() {
     val viewState = ListingUiState(isLoading = false)
     LuxImmoTheme {
-        MainContent(viewState, onAction = {})
+        ListingScreen(viewState, onAction = {})
     }
 }
 
@@ -216,6 +222,6 @@ private fun ListingErrorPreview() {
     )
 
     LuxImmoTheme {
-        MainContent(viewState, onAction = {})
+        ListingScreen(viewState, onAction = {})
     }
 }
