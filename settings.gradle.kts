@@ -34,3 +34,4 @@ include(":core:testing")
 include(":feature")
 include(":feature:listings")
 
+include(":benchmark")
