@@ -20,12 +20,11 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
@@ -37,47 +36,32 @@ internal class DetailViewModel @AssistedInject constructor(
     private val resourceProvider: ResourceProvider,
     @Assisted val listingId: Int,
 ) : ViewModel() {
+
     private val syncStatus = MutableStateFlow<SyncStatus>(SyncStatus.NotStarted)
     private var refreshJob: Job? = null
 
-    val viewState: StateFlow<DetailUiState>
-        field = MutableStateFlow(DetailUiState(isLoading = true))
-
-    // Call it from view to have control
-    fun initialise() {
-        observeListingAndSync()
-    }
-
     /**
-     * Start collecting data from use case and combines it with sync status
-     * Automatically triggers initial refresh on start.
-     * Updates view state on the basis of listing availability and sync status
+     * Observes the listing from the use case combined with sync status and maps it to view state.
+     *
+     * The stream is subscription-driven: collection starts when the UI subscribes and the initial
+     * refresh is triggered via [onStart]. With [SharingStarted.WhileSubscribed] the upstream stops
+     * 5s after the last subscriber leaves and restarts (re-refreshing) on the next subscription.
      */
-    private fun observeListingAndSync() {
-        combine(getListingDetailUseCase(listingId),
-            syncStatus) { listing, syncStatus ->
-            DetailViewData(
-                listing = listing,
-                uiErrorConfig = calculateErrorConfig(listing, syncStatus)
+    val viewState: StateFlow<DetailUiState> =
+        combine(getListingDetailUseCase(listingId), syncStatus) { listing, status ->
+            val errorConfig = calculateErrorConfig(listing, status)
+            DetailUiState(
+                listing = listing?.toListingUi(resourceProvider),
+                isLoading = listing == null && errorConfig == null,
+                error = errorConfig,
             )
         }
             .onStart { refreshListing() }
-            .onEach { data ->
-                viewState.update {
-                    it.copy(
-                        listing = data.listing?.toListingUi(resourceProvider),
-                        isLoading = data.listing == null && data.uiErrorConfig == null,
-                        error = data.uiErrorConfig
-                    )
-                }
-            }
-            .launchIn(viewModelScope)
-    }
-
-    private data class DetailViewData(
-        val listing: Listing?,
-        val uiErrorConfig: UiErrorConfig?
-    )
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = DetailUiState(isLoading = true),
+            )
 
     /**
      *  Determines error configuration based on listing availability and sync status

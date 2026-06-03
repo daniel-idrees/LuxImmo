@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalCoroutinesApi::class)
+
 package com.example.listings.ui.detail
 
 import app.cash.turbine.test
@@ -9,6 +11,8 @@ import com.example.listings.resource.TestResourceProvider
 import com.example.testing.data.testListingData
 import com.example.testing.repository.TestListingRepository
 import com.example.testing.util.MainDispatcherRule
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Rule
@@ -17,7 +21,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 class DetailViewModelTest {
     @get:Rule
@@ -38,6 +41,7 @@ class DetailViewModelTest {
 
     @Test
     fun `state is initially loading`() = runTest {
+        // No subscriber yet, so viewState holds the stateIn initial value.
         assertEquals(DetailUiState(isLoading = true), viewModel.viewState.value)
     }
 
@@ -49,38 +53,35 @@ class DetailViewModelTest {
         listingRepository.sendListings(listOf(testListingData))
 
         viewModel.viewState.test {
+            // Subscribing starts the WhileSubscribed stream, which triggers the initial refresh via onStart.
+            advanceUntilIdle()
 
-            assertTrue(awaitItem().isLoading)
-
-            // data load will start here
-            viewModel.initialise()
-
-            // Assert
-            val finalState = awaitItem()
+            // Assert the settled state (intermediate states are conflated by StateFlow).
+            val finalState = expectMostRecentItem()
             assertFalse(finalState.isLoading)
             assertNull(finalState.error)
             assertEquals(testListingUi, finalState.listing)
+
+            cancelAndIgnoreRemainingEvents()
         }
     }
 
     @Test
     fun `when repository returns data but refresh is error, state still shows content`() = runTest {
-
         // refresh result will be error but repository will return data
         listingRepository.setRefreshListingResult(Result.Error(AppError.NoInternetConnection))
         listingRepository.sendListings(listOf(testListingData))
 
         viewModel.viewState.test {
-            assertTrue(awaitItem().isLoading)
-
-            // data load will start here
-            viewModel.initialise()
+            advanceUntilIdle()
 
             // Assert
-            val finalState = awaitItem()
+            val finalState = expectMostRecentItem()
             assertFalse(finalState.isLoading)
             assertNull(finalState.error)
             assertEquals(testListingUi, finalState.listing)
+
+            cancelAndIgnoreRemainingEvents()
         }
     }
 
@@ -91,16 +92,15 @@ class DetailViewModelTest {
             listingRepository.setRefreshListingResult(Result.Success(testListingData))
 
             viewModel.viewState.test {
-                assertTrue(awaitItem().isLoading)
-
-                // data load will start here
-                viewModel.initialise()
+                advanceUntilIdle()
 
                 // Assert
-                val finalState = awaitItem()
+                val finalState = expectMostRecentItem()
                 assertFalse(finalState.isLoading)
                 assertNull(finalState.error)
                 assertEquals(testListingUi, finalState.listing)
+
+                cancelAndIgnoreRemainingEvents()
             }
         }
 
@@ -114,17 +114,16 @@ class DetailViewModelTest {
             listingRepository.sendListings(listOf(testListingData))
 
             viewModel.viewState.test {
-                assertTrue(awaitItem().isLoading)
-
-                // start loading date
-                viewModel.initialise()
+                advanceUntilIdle()
 
                 // Assert
-                val finalState = awaitItem()
+                val finalState = expectMostRecentItem()
                 assertFalse(finalState.isLoading)
                 assertNotNull(finalState.error)
                 assertEquals("Listing not found", finalState.error.errorText)
                 assertNull(finalState.error.onRetry) // No retry for a 404
+
+                cancelAndIgnoreRemainingEvents()
             }
         }
 
@@ -132,7 +131,6 @@ class DetailViewModelTest {
     @Test
     fun `when repository returns data and refresh is success with different data, state shows latest one`() =
         runTest {
-
             val sampleListingWithPriceIncrease = testListingData.copy(
                 price = 9500000.0,  //imagine price increased
             )
@@ -143,17 +141,16 @@ class DetailViewModelTest {
             listingRepository.sendListings(listOf(testListingData))
 
             viewModel.viewState.test {
-                assertTrue(awaitItem().isLoading)
-
-                // start loading date
-                viewModel.initialise()
+                advanceUntilIdle()
 
                 // Assert
-                val finalState = awaitItem()
+                val finalState = expectMostRecentItem()
                 assertFalse(finalState.isLoading)
                 assertNull(finalState.error)
                 val expectedListing = sampleListingWithPriceIncrease.toListingUi(resourceProvider)
                 assertEquals(expectedListing, finalState.listing)
+
+                cancelAndIgnoreRemainingEvents()
             }
         }
 
@@ -165,17 +162,16 @@ class DetailViewModelTest {
         listingRepository.sendListings(emptyList())
 
         viewModel.viewState.test {
-            assertTrue(awaitItem().isLoading)
-
-            // start loading the data
-            viewModel.initialise()
+            advanceUntilIdle()
 
             // Assert
-            val finalState = awaitItem()
+            val finalState = expectMostRecentItem()
             assertFalse(finalState.isLoading)
             assertNotNull(finalState.error)
             assertEquals("Offline", finalState.error.errorText)
             assertNotNull(finalState.error.onRetry)
+
+            cancelAndIgnoreRemainingEvents()
         }
     }
 }
