@@ -19,7 +19,6 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Test
-import org.mockito.kotlin.any
 
 class OfflineFirstListingRepositoryTest {
 
@@ -176,8 +175,8 @@ class OfflineFirstListingRepositoryTest {
             //  Configure the test data source to throw an error
             networkDataSource.setShouldThrowNetworkError(TestGslNetworkDataSource.NetworkError.IO_EXCEPTION)
 
-            // call the refresh and assert it returns an error
-            val result = repository.refreshListing(any())
+            // call the refresh and assert it returns an error (id is irrelevant; the network throws first)
+            val result = repository.refreshListing(listingId = 1)
 
             // Assert
             assertTrue(result is Result.Error && result.error == AppError.NoInternetConnection)
