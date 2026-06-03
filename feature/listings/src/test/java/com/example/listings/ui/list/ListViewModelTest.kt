@@ -616,7 +616,7 @@ class ListViewModelTest {
             viewModel.setAction(ListingUiAction.OnSortChange(ListingSortOption.PriceAsc))
 
             // view state update with sort option
-            (awaitItem().activeSort == ListingSortOption.PriceAsc)
+            assertEquals(ListingSortOption.PriceAsc, awaitItem().activeSort)
 
             // Assert
             val sortedList = awaitItem().listings
@@ -644,7 +644,7 @@ class ListViewModelTest {
             viewModel.setAction(ListingUiAction.OnSortChange(ListingSortOption.PriceDesc))
 
             // view state update with sort option
-            (awaitItem().activeSort == ListingSortOption.PriceDesc)
+            assertEquals(ListingSortOption.PriceDesc, awaitItem().activeSort)
 
             // Assert
             val sortedList = awaitItem().listings
@@ -717,7 +717,7 @@ class ListViewModelTest {
                 viewModel.setAction(ListingUiAction.OnSortChange(ListingSortOption.PriceAsc))
 
                 // view state update with sort option
-                (awaitItem().activeSort == ListingSortOption.PriceAsc)
+                assertEquals(ListingSortOption.PriceAsc, awaitItem().activeSort)
 
                 // Assert
                 val sortedList = awaitItem().listings
@@ -729,7 +729,7 @@ class ListViewModelTest {
                 // Change sort option to Default
                 viewModel.setAction(ListingUiAction.OnSortChange(ListingSortOption.Default))
                 // view state update with sort option
-                (awaitItem().activeSort == ListingSortOption.Default)
+                assertEquals(ListingSortOption.Default, awaitItem().activeSort)
 
                 // Assert
                 val defaultOrderList = awaitItem().listings

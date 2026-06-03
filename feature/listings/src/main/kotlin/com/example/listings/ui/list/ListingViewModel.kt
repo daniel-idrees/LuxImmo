@@ -216,15 +216,12 @@ internal class ListingViewModel @Inject constructor(
     private fun refreshData() {
         refreshJob?.cancel()
         refreshJob = viewModelScope.launch {
+            syncStatus.emit(SyncStatus.Running)
 
-            launch {
-                syncStatus.emit(SyncStatus.Running)
-
-                val result = getListingsUseCase.refresh()
-                when (result) {
-                    is Result.Error -> syncStatus.emit(SyncStatus.Error(result.error))
-                    is Result.Success<*> -> syncStatus.emit(SyncStatus.Finished)
-                }
+            val result = getListingsUseCase.refresh()
+            when (result) {
+                is Result.Error -> syncStatus.emit(SyncStatus.Error(result.error))
+                is Result.Success<*> -> syncStatus.emit(SyncStatus.Finished)
             }
         }
     }
