@@ -41,13 +41,19 @@ internal class ConnectivityManagerNetworkMonitor @Inject constructor(
     private val connectivityManager = context.getSystemService<ConnectivityManager>()
 
     override val isOnline: Flow<Boolean> = callbackFlow {
+        // Track the set of currently available networks so that losing one transport
+        // (e.g. Wi-Fi) does not report "offline" while another (e.g. cellular) is still up.
+        val networks = mutableSetOf<Network>()
+
         val callback = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
+                networks += network
                 channel.trySend(true)
             }
 
             override fun onLost(network: Network) {
-                channel.trySend(false)
+                networks -= network
+                channel.trySend(networks.isNotEmpty())
             }
         }
 
