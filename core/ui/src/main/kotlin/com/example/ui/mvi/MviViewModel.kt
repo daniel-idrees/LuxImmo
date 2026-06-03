@@ -55,10 +55,7 @@ abstract class MviViewModel<Action : ViewAction, UiState : ViewState, Effect : V
     }
 
     protected fun setState(reducer: UiState.() -> UiState) {
-        val newState = viewState.value.reducer()
-        _viewState.update {
-            newState
-        }
+        _viewState.update { it.reducer() }
     }
 
     private fun subscribeToActions() {
