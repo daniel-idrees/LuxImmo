@@ -34,6 +34,7 @@ This project uses a curated set of modern, best-practice libraries and tools:
     *   [JUnit 4](https://junit.org/junit4/) & [kotlin.test](https://kotlinlang.org/api/latest/kotlin.test/) for unit testing.
     *   `kotlinx-coroutines-test` (`TestScope`, `UnconfinedTestDispatcher`) for coroutine testing.
     *   [Turbine](https://github.com/cashapp/turbine) for robustly testing Kotlin Flows.
+*   **Performance**: [Macrobenchmark](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-overview) & [Baseline Profiles](https://developer.android.com/topic/performance/baselineprofiles/overview) for measuring and optimizing startup and scroll performance.
 
 
 ## Key Features & Implementation Details
@@ -60,6 +61,34 @@ The project includes a robust suite of tests demonstrating best practices:
 *   **ViewModel Tests:** Verify the business logic and state transformations in the ViewModels. Uses `TestScope` and Turbine to test `Flow`-based state management.
 *   **Repository Tests:** Test the integration between the network and database layers.
 *   **Mapper Tests:** Simple unit tests verify that data is correctly transformed between the network, database, and domain layers.
+
+## Performance & Benchmarking
+
+The project includes a dedicated `:benchmark` module (`com.android.test`) that uses **Jetpack Macrobenchmark** to measure real-world performance and generate a **Baseline Profile**. The benchmarks run against the `:app` module on a connected device or emulator.
+
+### Baseline Profile
+
+A [Baseline Profile](https://developer.android.com/topic/performance/baselineprofiles/overview) lists the classes and methods exercised during critical user journeys so that ART can pre-compile (AOT) that code at install time, instead of relying on the slower JIT during the first runs. This improves cold-start time and first-frame/scroll smoothness for end users.
+
+*   `BaselineProfileGenerator` captures the journey of launching the app and scrolling the listings list, so the row composables, image-loading, and `LazyColumn` machinery get pre-compiled.
+*   The `androidx.baselineprofile` plugin is applied in both `:benchmark` (the producer) and `:app` (the consumer), and `:app` ships `androidx.profileinstaller` to install the bundled profile at runtime.
+
+Generate (and refresh) the profile with:
+
+```bash
+./gradlew :app:generateReleaseBaselineProfile
+```
+
+### Macrobenchmarks
+
+Two macrobenchmarks measure the performance the user actually feels. Run them from Android Studio (the gutter run icon) or via Gradle, against a **release/benchmark build on a physical device** for representative numbers:
+
+*   **`StartupBenchmark`** — measures cold-start time to first frame (`StartupTimingMetric`, 5 iterations, `StartupMode.COLD`). Requires `<profileable android:shell="true" />` in `:app`'s manifest.
+*   **`ListingsScrollBenchmark`** — measures scroll/frame timing (`FrameTimingMetric`) while flinging the listings list. It runs the same flow under two compilation modes so you can confirm the baseline profile actually helps:
+    *   `scrollNoCompilation` — JIT only (worst case).
+    *   `scrollBaselineProfile` — uses the bundled baseline profile (what most users get).
+
+> **Note:** Benchmarks should be run on a real device. Results from an emulator are not representative of real-world performance; the module sets `androidx.benchmark.suppressErrors = EMULATOR` so they can still be run locally for verification.
 
 ## How to Build and Run
 
