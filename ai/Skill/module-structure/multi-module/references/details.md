@@ -10,7 +10,7 @@
   :core:data              # Repository IMPLEMENTATIONS, model mappers, combines network + database.
   :core:network           # DTOs, data-source interfaces + Retrofit impl, JSON, networking DI.
   :core:database          # Room database, entities, DAOs, database DI.
-  :core:designsystem      # Theme, color, typography, spacing/sizing tokens, icons, atomic components. UI only, no business logic.
+  :core:designsystem      # Theme, color, typography, spacing/sizing tokens, icons, atomic components. UI only.
   :core:ui                # MVI base classes, shared composables, ResourceProvider, Navigator, UI models.
   :core:testing           # Shared test fakes, test data, JUnit rules. Consumed via testImplementation.
 :feature
@@ -24,9 +24,11 @@
 - `:core:domain` depends on **nothing** internal and has no Android dependencies.
 - `:core:data` depends on `:core:domain`, `:core:network`, `:core:database`.
 - Only `:app` knows about every layer and assembles the graph.
-- `:core:designsystem` contains **no** business logic; `:core:ui` may depend on it.
+- `:core:ui` may depend on `:core:designsystem`; never the reverse.
 
 **Why:** features can be built, tested, and reasoned about in isolation; swapping a data source never touches feature code; and the build system, not discipline, keeps the boundaries.
+
+> **Rule:** no business logic in composables or in the design system. Composables render state and emit actions; that's it.
 
 ## Visibility
 

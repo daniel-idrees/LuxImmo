@@ -1,8 +1,8 @@
 # Architecture Layers in Detail
 
-> Use when writing domain models, use cases, repositories, DTOs, DAOs, or mappers.
+> Use when writing domain models, use cases, repositories, DTOs, DAOs, or mappers — or building a ViewModel and its State / Action / Effect contract.
 
-> Copy-paste skeletons for the code referenced below (`Result`, use case, `runSuspendCatching`, offline-first repository) are in [`../template.md`](../template.md).
+> Copy-paste skeletons for the code referenced below (`Result`, use case, `runSuspendCatching`, offline-first repository, and the MVI contracts + `MviViewModel` base) are in [`../template.md`](../template.md).
 
 ## The layers at a glance
 
@@ -69,6 +69,8 @@ Reads flow out of the **database** (the single source of truth); the **network**
 
 Houses the MVI base classes, shared stateless composables (loading view, error view, app bar, async image), UI-level models, the `Navigator`, and the `ResourceProvider`.
 
+> The UI layer is Jetpack Compose throughout. How a screen's ViewModel and its State / Action / Effect contract are built is covered in §5 below (*The UI loop (MVI)*); how the composables, previews, and test tags are written lives in the `compose-ui` skill.
+
 ## Single-module variant
 
 In a single-module project the layers are **packages**, not Gradle modules — the code is identical; only placement and visibility change:
@@ -82,3 +84,71 @@ In a single-module project the layers are **packages**, not Gradle modules — t
 | `:core:ui` | `ui/` |
 
 The same dependency direction (`ui → domain ← data`) and offline-first rules apply, but they're kept by **convention** (optionally a lint / Konsist rule) rather than enforced by the build. Because everything is in one module, `internal` no longer hides a type from other layers — lean on package structure and discipline.
+
+## The UI loop (MVI)
+
+The UI layer is Jetpack Compose driven by a strict one-way loop: the user emits an **Action**, the ViewModel reduces it into immutable **State**, and the screen redraws from that state; one-time events go out as **Effects**. Because there is only one path for changes, screen behavior is easy to follow, reproduce, and fix. Use this when building a ViewModel and its State / Action / Effect contract. *(Copy-paste skeletons — the contracts, the `MviViewModel` base, and a screen's State/Action/Effect + ViewModel — are in [`../template.md`](../template.md); a filled-in example is in [`../examples/articles-list-mvi.md`](../examples/articles-list-mvi.md).)*
+
+> MVI is the UI *pattern*; the composables that render the state are agnostic to it (they work equally with MVVM) and live in the `compose-ui` skill.
+
+## 5.1 Contracts (in `:core:ui`)
+
+Three marker interfaces define the shape of every screen's contract: an immutable `ViewState` (a data class), a `ViewAction` (a sealed interface of user intents), and a `ViewSideEffect` (a sealed interface of one-time events).
+
+## 5.2 Base ViewModel
+
+A generic `MviViewModel` base manages the `StateFlow` of state, a buffered action `SharedFlow`, and a `Channel`-backed effect `Flow`. Key behaviors:
+
+- State updates **only** through `setState { copy(...) }` — never mutate, always reduce.
+- One-time events go through `setEffect` (delivered via `Channel`/`receiveAsFlow`) so they survive config changes and are not replayed.
+- Actions flow in through `setAction` and are dispatched in `handleAction`.
+
+## 5.3 A feature's MVI contract
+
+Each screen owns four files (or one cohesive set): its `<Screen>UiState`, `<Screen>UiAction`, `<Screen>UiEffect`, and `<Screen>ViewModel`.
+
+**Conventions captured in the templates:**
+
+- ViewModels and their state/action/effect types are `internal` to the feature module.
+- State is an **immutable** `data class` — `val`s with sensible defaults, annotated `@Immutable`. Model `Action`/`Effect` (and the domain `Result`, §4.1) as `sealed interface`/`sealed class` so every `when` is exhaustive with **no `else`** branch.
+- ViewModels never touch Android `Context`, string resources directly, or `Dispatchers.X` literals — they take a `ResourceProvider` and an injected dispatcher.
+- Heavy transformation (mapping/sorting) runs on the injected `@DefaultDispatcher` via `flowOn`.
+- Use `combine`, `distinctUntilChanged`, `shareIn(WhileSubscribed(5000), replay = 1)` to merge sources and avoid duplicate upstream work.
+- An explicit `Init` action triggers first load (paired with `OneTimeLaunchedEffect` in the UI).
+
+> **Guardrail:** a ViewModel never touches Android `Context`, `Dispatchers.X` literals, or user-facing string literals — inject `ResourceProvider` and a qualified dispatcher instead. Reuse the shared `MviViewModel` base rather than hand-rolling a second state/effect mechanism. (Before/after fixes for both are in [`../examples/articles-list-mvi.md`](../examples/articles-list-mvi.md).)
+
+## MVI in a single module
+
+The pattern is identical. The contracts and the `MviViewModel` base live in a `ui/` package instead of `:core:ui`; a screen's `State` / `Action` / `Effect` + ViewModel live in that feature's `feature/<name>/` package. With one module, `internal` no longer scopes a type to a single feature, so keep each screen's MVI types together in its package and rely on that boundary.
+
+## Adding a new feature end to end
+
+> Use when adding a brand-new feature end to end. Follow start to finish.
+
+A feature cuts across every layer above plus the UI skills (MVI, Compose, navigation, testing). Follow the same recipe each time so the structure stays consistent and nothing is left half-done:
+
+1. **Register the feature module** — `include(":feature:<name>")` in `settings.gradle.kts` and add its `build.gradle.kts` (check whether the project uses convention plugins).
+2. **Wire navigation** — add `NavKey`(s) and the feature's `entry` provider; register it in `:app`.
+3. **Domain slice** (`:core:domain`) — model(s), repository interface, and use case(s) (§4.1).
+4. **Data slice** — DTO + network data source (`:core:network`, §4.3), entity + DAO (`:core:database`, §4.4), and the offline-first repository implementation + mappers + Hilt `@Binds` (`:core:data`, §4.2).
+5. **UI** — State / Action / Effect, the `@HiltViewModel` ViewModel, the stateful + stateless composables, and the UI model + mapper (see §5 above and the `compose-ui` skill).
+6. **Tests** — a ViewModel unit test (fakes + Turbine) and a Compose UI test driven by test tags (see the testing skills).
+
+A file-by-file worked example is in [`../examples/articles-feature-multi-module-walkthrough.md`](../examples/articles-feature-multi-module-walkthrough.md).
+
+### Single-module variant
+
+Same feature, packages instead of modules (see the layer table above for where each slice lands):
+
+1. Create a `feature/<name>/` package — no `settings.gradle.kts` include, no per-feature `build.gradle.kts` (steps 1 above don't apply).
+2. Add `NavKey`(s) and the feature's `entry` provider in the same package; register it in the app's nav host.
+3. Steps 3–6 are identical, but the slices live in packages (`domain/…`, `data/…`, `feature/<name>/…`) rather than separate modules.
+
+The single-module walkthrough is in [`../examples/articles-feature-single-module-walkthrough.md`](../examples/articles-feature-single-module-walkthrough.md).
+
+### Feature guardrails
+
+> **Guardrail:** a feature must not add cross-feature dependencies or reach into the data layer.
+> - **Multi-module:** the feature depends only on `:core:domain`, `:core:ui`, `:core:common` — never on `:core:data` / `:core:network` / `:core:database`, and never on another feature. The module graph enforces this.
+> - **Single-module:** the `feature/<name>` package uses only the `domain` and `ui` packages — never `data` / `network` / `database` directly, and never another feature's package. The build can't enforce this, so the discipline lives in convention and code review (optionally a lint / Konsist rule).

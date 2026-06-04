@@ -8,7 +8,6 @@ Fill-in skeleton. Replace `<Screen>`. Every screen is a thin stateful wrapper pl
 @Composable
 internal fun <Screen>Screen(viewModel: <Screen>ViewModel) {
     val state by viewModel.viewState.collectAsStateWithLifecycle()
-    OneTimeLaunchedEffect { viewModel.setAction(<Screen>UiAction.Init) }
     <Screen>Screen(state = state, onAction = viewModel::setAction)
 }
 

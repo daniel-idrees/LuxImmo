@@ -27,6 +27,8 @@ com.example.app
 
 **Why:** the layering, single-source-of-truth, and MVI benefits are identical; you simply trade build-enforced isolation for a much simpler build setup.
 
+> **Rule:** no business logic in composables or in the design system. Composables render state and emit actions; that's it.
+
 ## Trade-offs vs. many modules
 
 - ✅ Far less Gradle ceremony; fastest to start; ideal for prototypes, samples, and small apps.
