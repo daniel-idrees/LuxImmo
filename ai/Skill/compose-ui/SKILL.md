@@ -1,6 +1,6 @@
 ---
 name: compose-ui
-description: Jetpack Compose UI conventions — stateful vs stateless composables, collecting state with lifecycle, one-time effects, design-system tokens, previews, and test tags. Reference when writing screens, composables, previews, or UI test tags.
+description: Jetpack Compose UI conventions — stateful vs stateless composables, collecting state with lifecycle, one-time effects, design-system tokens, image loading (Coil 3), previews, and test tags. Reference when writing screens, composables, previews, or UI test tags.
 version: "1.0"
 ---
 

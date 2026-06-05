@@ -20,6 +20,7 @@ All shared Gradle configuration lives in an included build at `build-logic/conve
 **Patterns:**
 
 - Centralize `compileSdk`, `minSdk`, `sourceCompatibility`/`targetCompatibility`, and Kotlin `jvmTarget` in **one** helper (`Project.configureKotlinAndroid`). Set them once.
+- Use **KSP** (not kapt) for Room/Hilt code generation wherever supported — the `<conv>.android.room` / `<conv>.android.hilt` plugins apply it.
 - Access the version catalog from plugins via an extension helper:
   ```kotlin
   internal val Project.libs get(): VersionCatalog =

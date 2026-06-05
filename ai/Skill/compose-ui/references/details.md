@@ -7,7 +7,8 @@
 - Collect effects once in a `LaunchedEffect`, branching to navigation/snackbar handlers.
 - Drive spacing/sizing from **design-system tokens** (`SPACING_SMALL`, `SPACING_MEDIUM`, …) — no magic `dp` numbers scattered in features.
 - Pull colors/typography from `MaterialTheme.colorScheme` / `MaterialTheme.typography`, themed by the design system.
-- Resolve user-facing strings with **`stringResource`** / **`pluralStringResource`** — never build them by concatenation. (ViewModels resolve strings via an injected `ResourceProvider` instead — see the `architecture-layers` skill.)
+- Resolve user-facing strings with **`stringResource`** / **`pluralStringResource`** — never build them by concatenation. (ViewModels can't call `stringResource`, so they resolve user-facing strings via an injected `ResourceProvider` abstraction instead.)
+- Load remote/async images with **Coil 3** (`AsyncImage`), sized via design-system tokens, with placeholder and error fallbacks.
 - Provide **`@Preview`s** for every meaningful state (content, loading, empty, error). Use a custom multi-preview annotation (e.g. `@LightDarkPreviews`) to render light + dark at once.
 - Keep composables **stateless and side-effect-free** except for the thin stateful wrapper.
 

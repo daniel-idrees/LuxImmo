@@ -4,6 +4,14 @@
 
 > Copy-paste skeletons for the code referenced below (`Result`, use case, `runSuspendCatching`, offline-first repository, and the MVI contracts + `MviViewModel` base) are in [`../template.md`](../template.md).
 
+## Writing style
+
+Cross-cutting habits that keep the codebase consistent no matter who — or what — writes it:
+
+- **Comments explain *why*, not *what*** — non-obvious flow behavior, ordering, or sync rules. Match the surrounding file's comment density.
+
+> **Guardrail:** mirror the nearest existing example — an existing feature, repository, or DI module — for structure and naming before inventing a new shape. A new pattern should be a deliberate, documented decision, not an accident; consistency is what lets anyone (or any AI agent) extend the code without surprises.
+
 ## The layers at a glance
 
 Three layers, with dependencies pointing **inward** toward a pure-Kotlin core. The domain layer is the center and knows nothing about Android, the network, or the database:
@@ -53,6 +61,8 @@ Reads flow out of the **database** (the single source of truth); the **network**
 
 ## 4.3 Network (`:core:network`)
 
+**Stack: Retrofit** (HTTP) + **OkHttp** (client + logging interceptor) + **`kotlinx.serialization`** (JSON).
+
 - DTOs are `@Serializable` data classes mirroring the API; never leak them past the data layer.
 - Define a **data-source interface** (`<Thing>NetworkDataSource`) and a Retrofit-backed implementation, so the network can be faked in tests.
 - Configure JSON with `ignoreUnknownKeys = true`.
@@ -60,6 +70,8 @@ Reads flow out of the **database** (the single source of truth); the **network**
 - Read `BASE_URL` and secrets from `BuildConfig`/build config fields, never hardcoded in source.
 
 ## 4.4 Database (`:core:database`)
+
+**Stack: Room** (with **KSP** codegen).
 
 - Room entities (`@Entity`), DAOs (`@Dao`) exposing `Flow` for reads and `suspend` for writes, and the `RoomDatabase`.
 - Provide upsert/replace operations for sync (`replaceAll`, `upsert`, `deleteById`).
@@ -69,7 +81,7 @@ Reads flow out of the **database** (the single source of truth); the **network**
 
 Houses the MVI base classes, shared stateless composables (loading view, error view, app bar, async image), UI-level models, the `Navigator`, and the `ResourceProvider`.
 
-> The UI layer is Jetpack Compose throughout. How a screen's ViewModel and its State / Action / Effect contract are built is covered in §5 below (*The UI loop (MVI)*); how the composables, previews, and test tags are written lives in the `compose-ui` skill.
+> The UI layer is Jetpack Compose throughout. How a screen's ViewModel and its State / Action / Effect contract are built is covered in §5 below (*The UI loop (MVI)*); how the composables, previews, and test tags are written is outside this skill's scope (it follows the standard stateful-entry-point + stateless-content Compose conventions).
 
 ## Single-module variant
 
@@ -89,7 +101,7 @@ The same dependency direction (`ui → domain ← data`) and offline-first rules
 
 The UI layer is Jetpack Compose driven by a strict one-way loop: the user emits an **Action**, the ViewModel reduces it into immutable **State**, and the screen redraws from that state; one-time events go out as **Effects**. Because there is only one path for changes, screen behavior is easy to follow, reproduce, and fix. Use this when building a ViewModel and its State / Action / Effect contract. *(Copy-paste skeletons — the contracts, the `MviViewModel` base, and a screen's State/Action/Effect + ViewModel — are in [`../template.md`](../template.md); a filled-in example is in [`../examples/articles-list-mvi.md`](../examples/articles-list-mvi.md).)*
 
-> MVI is the UI *pattern*; the composables that render the state are agnostic to it (they work equally with MVVM) and live in the `compose-ui` skill.
+> MVI is the UI *pattern*; the composables that render the state are agnostic to it (they work equally with MVVM) and are outside this skill's scope.
 
 ## 5.1 Contracts (in `:core:ui`)
 
@@ -126,14 +138,14 @@ The pattern is identical. The contracts and the `MviViewModel` base live in a `u
 
 > Use when adding a brand-new feature end to end. Follow start to finish.
 
-A feature cuts across every layer above plus the UI skills (MVI, Compose, navigation, testing). Follow the same recipe each time so the structure stays consistent and nothing is left half-done:
+A feature cuts across every layer above plus the UI concerns (MVI, Compose, navigation, and tests). Follow the same recipe each time so the structure stays consistent and nothing is left half-done:
 
 1. **Register the feature module** — `include(":feature:<name>")` in `settings.gradle.kts` and add its `build.gradle.kts` (check whether the project uses convention plugins).
 2. **Wire navigation** — add `NavKey`(s) and the feature's `entry` provider; register it in `:app`.
 3. **Domain slice** (`:core:domain`) — model(s), repository interface, and use case(s) (§4.1).
 4. **Data slice** — DTO + network data source (`:core:network`, §4.3), entity + DAO (`:core:database`, §4.4), and the offline-first repository implementation + mappers + Hilt `@Binds` (`:core:data`, §4.2).
-5. **UI** — State / Action / Effect, the `@HiltViewModel` ViewModel, the stateful + stateless composables, and the UI model + mapper (see §5 above and the `compose-ui` skill).
-6. **Tests** — a ViewModel unit test (fakes + Turbine) and a Compose UI test driven by test tags (see the testing skills).
+5. **UI** — State / Action / Effect, the `@HiltViewModel` ViewModel, the stateful + stateless composables, and the UI model + mapper (the ViewModel/MVI contract is covered in §5 above; the composables follow the standard stateful-entry-point + stateless-content Compose conventions).
+6. **Tests** — a ViewModel unit test (fakes + Turbine) and a Compose UI test driven by test tags.
 
 A file-by-file worked example is in [`../examples/articles-feature-multi-module-walkthrough.md`](../examples/articles-feature-multi-module-walkthrough.md).
 

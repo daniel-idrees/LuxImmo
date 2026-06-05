@@ -2,6 +2,8 @@
 
 > Use when writing JVM unit tests with fakes, or building shared test infrastructure. **Fakes are the default doubling style in this architecture**; reach for Mockito only when you specifically need interaction verification.
 
+**Test stack:** JUnit4 (runner + rules), `kotlinx-coroutines-test` (`runTest`, `TestDispatcher`), Turbine (`Flow`/state/effect assertions), and hand-written fakes. Mockito (with `mockito-kotlin`) is reached for deliberately — see the `unit-testing-with-mocks` skill.
+
 ## Shared test infrastructure (`:core:testing`)
 
 - **Fakes over mocks** for collaborators with behavior: `Test<Thing>Repository` (lets tests push emissions and program refresh results/delays), `TestNetworkMonitor`, `TestResourceProvider` (returns predictable strings).
