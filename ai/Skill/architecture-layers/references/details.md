@@ -79,6 +79,46 @@ Reads flow out of the **database** (the single source of truth); the **network**
 - Provide upsert/replace operations for sync (`replaceAll`, `upsert`, `deleteById`).
 - Generated code via **KSP**. Provide the DB and DAOs through Hilt modules.
 
+## Network-only (no offline-first) variant
+
+> Applies only when the skill-router preference `offline_first` is **`no`**. When it is `yes` (the default), ignore this section and use §4.2 + §4.4 as written.
+
+When offline-first is disabled, the app fetches straight from the network with no local persistence. The domain (§4.1) and network (§4.3) layers are unchanged; the database and the offline-first machinery are removed:
+
+- **Skip `:core:database` entirely** — no Room, no `@Entity`, no `@Dao`, no `RoomDatabase`, no KSP-for-Room, and no Room convention plugin. (Multi-module: don't create the `:core:database` module and drop `:core:data`'s dependency on it. Single-module: omit the `data/database/` package.)
+- **Repository implementation depends only on the network data source** (no DAO). Drop the `OfflineFirst` prefix — name it for what it now is, e.g. `Network<Thing>Repository` or `Default<Thing>Repository`. Still `internal`, still bound to its interface via Hilt `@Binds`.
+- **Reads hit the network directly.** There is no database `Flow` acting as a single source of truth, so a read is a one-shot `suspend fun` returning the domain `Result<T>` (network fetched, mapped, wrapped via `runSuspendCatching` + `.fold`). There is no separate `refresh()` — every read goes to the network — and no cache to write back to.
+- **Mappers collapse to one hop:** only `NetworkDto.asExternalModel()` (network → domain). There are no entity mappers (`asEntity` / `Entity.asExternalModel`).
+- **Repository interface (§4.1) changes shape accordingly:** reads return `suspend fun get<Thing>s(): Result<List<<Thing>>>` instead of `Flow` + `refresh()`. The use case and ViewModel call it the same way they would any one-shot `Result`-returning operation (the ViewModel triggers the load on `Init` and again on pull-to-refresh; there is no DB flow that auto-updates the list).
+
+```kotlin
+// Domain repository interface (:core:domain) — one-shot reads, no Flow/refresh split
+interface <Thing>Repository {
+    suspend fun get<Thing>s(): Result<List<<Thing>>>
+    suspend fun get<Thing>(id: Int): Result<<Thing>?>
+}
+
+// Network-only implementation (:core:data) — no DAO, no cache, DTO → domain directly
+internal class Network<Thing>Repository @Inject constructor(
+    private val network: <Thing>NetworkDataSource,
+) : <Thing>Repository {
+
+    override suspend fun get<Thing>s(): Result<List<<Thing>>> =
+        runSuspendCatching { network.get() }.fold(
+            onSuccess = { dto -> Result.Success(dto.items.map(Dto::asExternalModel)) },
+            onFailure = { it.toErrorResult() },
+        )
+
+    override suspend fun get<Thing>(id: Int): Result<<Thing>?> =
+        runSuspendCatching { network.get<Thing>(id) }.fold(
+            onSuccess = { dto -> Result.Success(dto?.asExternalModel()) },
+            onFailure = { it.toErrorResult() },
+        )
+}
+```
+
+> **Guardrail:** don't mix the two modes. If `offline_first` is `no`, there must be no Room/DAO/entity code and no `OfflineFirst*` repository; if it's `yes`, reads come from the DB and the network only refreshes the cache (§4.2). Switching modes is a deliberate, documented change to `.preferences.md`, not a per-file choice.
+
 ## 4.5 UI core (`:core:ui`)
 
 Houses the MVI base classes, shared stateless composables (loading view, error view, app bar, async image), UI-level models, the `Navigator`, and the `ResourceProvider`.
@@ -145,7 +185,7 @@ A feature cuts across every layer above plus the UI concerns (MVI, Compose, navi
 1. **Register the feature module** — `include(":feature:<name>")` in `settings.gradle.kts` and add its `build.gradle.kts` (check whether the project uses convention plugins).
 2. **Wire navigation** — add `NavKey`(s) and the feature's `entry` provider; register it in `:app`.
 3. **Domain slice** (`:core:domain`) — model(s), repository interface, and use case(s) (§4.1).
-4. **Data slice** — DTO + network data source (`:core:network`, §4.3), entity + DAO (`:core:database`, §4.4), and the offline-first repository implementation + mappers + Hilt `@Binds` (`:core:data`, §4.2).
+4. **Data slice** — DTO + network data source (`:core:network`, §4.3), entity + DAO (`:core:database`, §4.4), and the offline-first repository implementation + mappers + Hilt `@Binds` (`:core:data`, §4.2). *(If the skill-router preference `offline_first` is `no`, skip the `:core:database`/entity/DAO work and build the network-only repository instead — see [Network-only (no offline-first) variant](#network-only-no-offline-first-variant).)*
 5. **UI** — State / Action / Effect, the `@HiltViewModel` ViewModel, the stateful + stateless composables, and the UI model + mapper (the ViewModel/MVI contract is covered in §5 above; the composables follow the standard stateful-entry-point + stateless-content Compose conventions).
 6. **Tests** — a ViewModel unit test (fakes + Turbine) and a Compose UI test driven by test tags.
 
