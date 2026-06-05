@@ -43,4 +43,4 @@ feature/articles/src/androidTest/.../
   ArticlesScreenTest.kt                                # test tags
 ```
 
-The feature's boundary rules live in the checklist's **Feature guardrails** section ([`../references/details.md`](../references/details.md)).
+The feature's boundary rules live in the checklist's **Feature guardrails** section ([`../references/adding-a-feature.md`](../references/adding-a-feature.md)).

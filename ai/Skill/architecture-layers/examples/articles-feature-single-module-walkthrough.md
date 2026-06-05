@@ -56,4 +56,4 @@ src/androidTest/.../
   weak boundary signal. Don't rely on it to keep a feature out of `data` — that's enforced by
   convention (and optionally a lint / Konsist rule), plus code review.
 
-The feature's boundary rules live in the checklist's **Feature guardrails** section ([`../references/details.md`](../references/details.md)).
+The feature's boundary rules live in the checklist's **Feature guardrails** section ([`../references/adding-a-feature.md`](../references/adding-a-feature.md)).

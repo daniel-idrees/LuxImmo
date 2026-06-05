@@ -34,7 +34,7 @@ A `@Serializable` DTO, a data-source **interface** (so the network can be faked 
 - **Direct object** — return the DTO straight from Retrofit when any non-2xx should just propagate (Retrofit throws `HttpException` for you).
 - **`Response<T>`** — return Retrofit's `Response` when the implementation needs the HTTP status (e.g. map 403/404 to `null` instead of throwing).
 
-The Retrofit/OkHttp/JSON instance (JSON `ignoreUnknownKeys = true`, logging gated on `BuildConfig.DEBUG`, `BASE_URL` from `BuildConfig`) is provided via a Hilt module — see §4.3 in [`references/details.md`](references/details.md).
+The Retrofit/OkHttp/JSON instance (JSON `ignoreUnknownKeys = true`, logging gated on `BuildConfig.DEBUG`, `BASE_URL` from `BuildConfig`) is provided via a Hilt module — see §4.3 in [`references/layers.md`](references/layers.md).
 
 ```kotlin
 // DTO — mirrors the API shape; never leaks past the data layer
