@@ -1,7 +1,7 @@
 ---
 name: architecture-layers
 description: The domain, data, network, and database layers in detail — pure-Kotlin domain models and use cases, an offline-first repository pattern, DTOs and Retrofit/OkHttp/kotlinx.serialization networking, DAOs and Room (KSP) persistence, mappers, and a typed Result — plus the MVI ViewModel pattern (immutable State, sealed Action, one-time Effect, and a reusable MviViewModel base) and the start-to-finish checklist for adding a brand-new feature end to end (module setup, domain/data wiring, MVI + Compose UI, navigation, UI models, and tests). Reference when writing domain models, use cases, repositories, DTOs, DAOs, or mappers, when building a ViewModel and its State/Action/Effect contract, or when adding a new feature. Also carries the cross-cutting writing conventions.
-version: "1.3"
+version: "1.4"
 ---
 
 # Architecture Layers
@@ -12,4 +12,4 @@ This skill describes how the app is organized into layers — the screens people
 
 ## Technical details
 
-The detailed responsibilities of each layer, the **MVI ViewModel pattern**, and the end-to-end "adding a feature" checklist live in [`references/details.md`](references/details.md), and the copy-paste code skeletons (`Result`, use case, offline-first repository, plus the MVI contracts + `MviViewModel` base + a screen's State/Action/Effect + ViewModel) are in [`template.md`](template.md). Generic worked examples (an "Articles" data + domain slice, its MVI screen contract, plus the same feature added end to end in multi- and single-module form) are in [`examples/`](examples/).
+The detailed responsibilities of each layer, the **MVI ViewModel pattern**, and the end-to-end "adding a feature" checklist live in [`references/details.md`](references/details.md), and the copy-paste code skeletons (`Result`, use case, the network DTO + data source + Retrofit API/client, offline-first repository, plus the MVI contracts + `MviViewModel` base + a screen's State/Action/Effect + ViewModel) are in [`template.md`](template.md). Generic worked examples (an "Articles" data + domain slice, its MVI screen contract, plus the same feature added end to end in multi- and single-module form) are in [`examples/`](examples/).

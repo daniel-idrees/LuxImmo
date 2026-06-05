@@ -2,7 +2,7 @@
 
 > Use when writing domain models, use cases, repositories, DTOs, DAOs, or mappers — or building a ViewModel and its State / Action / Effect contract.
 
-> Copy-paste skeletons for the code referenced below (`Result`, use case, `runSuspendCatching`, offline-first repository, and the MVI contracts + `MviViewModel` base) are in [`../template.md`](../template.md).
+> Copy-paste skeletons for the code referenced below (`Result`, use case, `runSuspendCatching`, the network DTO + data source + Retrofit API/client, offline-first repository, and the MVI contracts + `MviViewModel` base) are in [`../template.md`](../template.md).
 
 ## Writing style
 
@@ -64,7 +64,9 @@ Reads flow out of the **database** (the single source of truth); the **network**
 **Stack: Retrofit** (HTTP) + **OkHttp** (client + logging interceptor) + **`kotlinx.serialization`** (JSON).
 
 - DTOs are `@Serializable` data classes mirroring the API; never leak them past the data layer.
-- Define a **data-source interface** (`<Thing>NetworkDataSource`) and a Retrofit-backed implementation, so the network can be faked in tests.
+- Define a **data-source interface** (`<Thing>NetworkDataSource`) and a Retrofit-backed implementation, so the network can be faked in tests. Choose the Retrofit return shape per endpoint:
+  - **Direct object** (e.g. `suspend fun get(): Dto`) — Retrofit throws `HttpException` on any non-2xx; use when every error should just propagate.
+  - **`Response<T>`** (e.g. `suspend fun get(id): Response<Dto?>`) — use when the implementation must read the status code, e.g. map 403/404 to `null` instead of throwing. *(Skeleton in [`../template.md`](../template.md).)*
 - Configure JSON with `ignoreUnknownKeys = true`.
 - Gate HTTP logging on `BuildConfig.DEBUG`.
 - Read `BASE_URL` and secrets from `BuildConfig`/build config fields, never hardcoded in source.

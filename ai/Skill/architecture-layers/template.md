@@ -27,6 +27,126 @@ class Get<Thing>UseCase @Inject constructor(
 }
 ```
 
+## Network (`:core:network`)
+
+A `@Serializable` DTO, a data-source **interface** (so the network can be faked in tests), the Retrofit **API declaration**, and a Retrofit-backed **implementation** of the interface. Pick the return shape per endpoint:
+
+- **Direct object** — return the DTO straight from Retrofit when any non-2xx should just propagate (Retrofit throws `HttpException` for you).
+- **`Response<T>`** — return Retrofit's `Response` when the implementation needs the HTTP status (e.g. map 403/404 to `null` instead of throwing).
+
+The Retrofit/OkHttp/JSON instance (JSON `ignoreUnknownKeys = true`, logging gated on `BuildConfig.DEBUG`, `BASE_URL` from `BuildConfig`) is provided via a Hilt module — see §4.3 in [`references/details.md`](references/details.md).
+
+```kotlin
+// DTO — mirrors the API shape; never leaks past the data layer
+@Serializable
+data class <Thing>Dto(
+    val id: Int,
+    // ... fields
+)
+
+// Data-source interface — the only network type the data layer depends on
+interface <Thing>NetworkDataSource {
+    suspend fun get<Thing>s(): <Thing>sResponse      // direct object
+    suspend fun get<Thing>(id: Int): <Thing>Dto?     // null when not found
+}
+
+// Retrofit API declaration — internal to :core:network
+internal interface Retrofit<Thing>NetworkApi {
+    // Direct object: a non-2xx response throws HttpException automatically
+    @GET("/<thing>s.json")
+    suspend fun get<Thing>s(): <Thing>sResponse
+
+    // Response<T>: lets the client inspect the HTTP status code
+    @GET("<thing>s/{id}.json")
+    suspend fun get<Thing>(@Path("id") id: Int): Response<<Thing>Dto?>
+}
+
+// Retrofit-backed implementation of the data-source interface
+@Singleton
+internal class Retrofit<Thing>ApiClient @Inject constructor(
+    private val networkApi: Retrofit<Thing>NetworkApi,
+) : <Thing>NetworkDataSource {
+
+    // Direct object — returned as-is; transport/HTTP errors surface as HttpException
+    override suspend fun get<Thing>s(): <Thing>sResponse =
+        networkApi.get<Thing>s()
+
+    // Response<T> — inspect the status: 403/404 mean "not found" → null,
+    // any other non-2xx is a real error and is rethrown
+    override suspend fun get<Thing>(id: Int): <Thing>Dto? {
+        val response = networkApi.get<Thing>(id = id)
+        return when {
+            response.isSuccessful -> response.body()
+            response.code() == 403 || response.code() == 404 -> null
+            else -> throw HttpException(response)
+        }
+    }
+}
+```
+
+### Hilt module (`:core:network`)
+
+Provides the JSON, OkHttp call factory, Retrofit API, and binds the data-source interface to its Retrofit-backed implementation. `internal object` in `SingletonComponent`. Reads `BASE_URL` / `DEBUG` from `BuildConfig`; never hardcode them.
+
+```kotlin
+@Module
+@InstallIn(SingletonComponent::class)
+internal object NetworkModule {
+
+    @Provides
+    @Singleton
+    fun providesNetworkJson(): Json = Json {
+        ignoreUnknownKeys = true
+    }
+
+    @Provides
+    @Singleton
+    fun provideHttpLoggingInterceptor(): HttpLoggingInterceptor =
+        HttpLoggingInterceptor().apply {
+            level = if (BuildConfig.DEBUG) {
+                HttpLoggingInterceptor.Level.BODY
+            } else {
+                HttpLoggingInterceptor.Level.NONE
+            }
+        }
+
+    @Provides
+    @Singleton
+    fun provideRetrofitBuilder(): Retrofit.Builder = Retrofit.Builder()
+
+    @Provides
+    @Singleton
+    fun okHttpCallFactory(
+        httpLoggingInterceptor: HttpLoggingInterceptor,
+    ): Call.Factory = OkHttpClient.Builder()
+        .addInterceptor(httpLoggingInterceptor)
+        .build()
+
+    @Provides
+    @Singleton
+    fun provideRetrofit<Thing>NetworkApi(
+        retrofitBuilder: Retrofit.Builder,
+        okhttpCallFactory: dagger.Lazy<Call.Factory>,
+        networkJson: Json,
+    ): Retrofit<Thing>NetworkApi =
+        retrofitBuilder
+            .baseUrl(BuildConfig.BASE_URL)
+            .callFactory { okhttpCallFactory.get().newCall(it) }
+            .addConverterFactory(
+                networkJson.asConverterFactory("application/json".toMediaType()),
+            )
+            .build()
+            .create(Retrofit<Thing>NetworkApi::class.java)
+
+    // Bind the data-source interface to its Retrofit-backed implementation
+    @Provides
+    @Singleton
+    fun provide<Thing>NetworkDataSource(
+        network: Retrofit<Thing>ApiClient,
+    ): <Thing>NetworkDataSource = network
+}
+```
+
 ## Safe network-call wrapper (`:core:data`)
 
 Never swallow coroutine cancellation; turn other failures into a typed `AppError` (e.g. `IOException → NoInternetConnection`, else `Unknown`).

@@ -27,6 +27,8 @@ class GetArticlesUseCase @Inject constructor(
 
 ## Network (`:core:network`)
 
+DTO, a data-source interface, the Retrofit API declaration, and a Retrofit-backed implementation. Two return shapes are shown: `getArticles()` returns the object directly (any non-2xx becomes an `HttpException`), while `getArticle(id)` returns Retrofit's `Response` so a 403/404 can be mapped to `null` instead of throwing.
+
 ```kotlin
 @Serializable
 data class ArticleDto(
@@ -36,8 +38,40 @@ data class ArticleDto(
     val body: String,
 )
 
+// The only network type the data layer sees — fakeable in tests
 interface ArticleNetworkDataSource {
+    suspend fun getArticles(): List<ArticleDto>     // direct object
+    suspend fun getArticle(id: String): ArticleDto? // null when not found
+}
+
+// Retrofit API declaration — internal to :core:network
+internal interface RetrofitArticleNetworkApi {
+    // Direct object: a non-2xx response throws HttpException automatically
+    @GET("articles.json")
     suspend fun getArticles(): List<ArticleDto>
+
+    // Response<T>: lets the client read the HTTP status code
+    @GET("articles/{id}.json")
+    suspend fun getArticle(@Path("id") id: String): Response<ArticleDto?>
+}
+
+@Singleton
+internal class RetrofitArticleApiClient @Inject constructor(
+    private val networkApi: RetrofitArticleNetworkApi,
+) : ArticleNetworkDataSource {
+
+    override suspend fun getArticles(): List<ArticleDto> =
+        networkApi.getArticles()
+
+    // 403/404 → the article doesn't exist (null); any other non-2xx is rethrown
+    override suspend fun getArticle(id: String): ArticleDto? {
+        val response = networkApi.getArticle(id = id)
+        return when {
+            response.isSuccessful -> response.body()
+            response.code() == 403 || response.code() == 404 -> null
+            else -> throw HttpException(response)
+        }
+    }
 }
 ```
 
