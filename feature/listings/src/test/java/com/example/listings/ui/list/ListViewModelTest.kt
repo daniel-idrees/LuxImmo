@@ -615,14 +615,12 @@ class ListViewModelTest {
             // Change sort option to Price Ascending
             viewModel.setAction(ListingUiAction.OnSortChange(ListingSortOption.PriceAsc))
 
-            // view state update with sort option
-            assertEquals(ListingSortOption.PriceAsc, awaitItem().activeSort)
-
-            // Assert
-            val sortedList = awaitItem().listings
+            // Sort option and sorted list now update together in a single state emission
+            val sortedState = awaitItem()
+            assertEquals(ListingSortOption.PriceAsc, sortedState.activeSort)
             assertEquals(
                 listingsTestData[1].id, // listing on index has lower price and should be first
-                sortedList[0].id
+                sortedState.listings[0].id
             )
         }
     }
@@ -643,14 +641,12 @@ class ListViewModelTest {
             // Change sort option to Price Descending
             viewModel.setAction(ListingUiAction.OnSortChange(ListingSortOption.PriceDesc))
 
-            // view state update with sort option
-            assertEquals(ListingSortOption.PriceDesc, awaitItem().activeSort)
-
-            // Assert
-            val sortedList = awaitItem().listings
+            // Sort option and sorted list now update together in a single state emission
+            val sortedState = awaitItem()
+            assertEquals(ListingSortOption.PriceDesc, sortedState.activeSort)
             assertEquals(
                 listingsTestData[3].id, // Listing on index 3 has higher price and should be first
-                sortedList[0].id
+                sortedState.listings[0].id
             )
         }
     }
@@ -666,10 +662,11 @@ class ListViewModelTest {
             // Action: Price per Square Meter Descending (Highest first)
             viewModel.setAction(ListingUiAction.OnSortChange(ListingSortOption.PricePerSquareMeterDesc))
 
-            // Assertions
-            assertEquals(ListingSortOption.PricePerSquareMeterDesc, awaitItem().activeSort)
+            // Sort option and sorted list now update together in a single state emission
+            val sortedState = awaitItem()
+            assertEquals(ListingSortOption.PricePerSquareMeterDesc, sortedState.activeSort)
 
-            val sortedList = awaitItem().listings
+            val sortedList = sortedState.listings
             // ID 1 or 2 have 2,000 per m2 (Highest), but ID 1 is expensive than 2 so ID 1 will be first
             assertEquals(1, sortedList[0].id)
             // ID 3 has ~666 per m2 (Lowest)
@@ -688,10 +685,11 @@ class ListViewModelTest {
             // Action: Price per Square Meter Ascending (Lowest first)
             viewModel.setAction(ListingUiAction.OnSortChange(ListingSortOption.PricePerSquareMeterAsc))
 
-            // Assertions
-            assertEquals(ListingSortOption.PricePerSquareMeterAsc, awaitItem().activeSort)
+            // Sort option and sorted list now update together in a single state emission
+            val sortedState = awaitItem()
+            assertEquals(ListingSortOption.PricePerSquareMeterAsc, sortedState.activeSort)
 
-            val sortedList = awaitItem().listings
+            val sortedList = sortedState.listings
             // ID 3 has 666 per m2 (Lowest)
             assertEquals(3, sortedList[0].id)
             // ID 1 or 2 have 2,000 per m2 (Highest) but ID 2 is cheaper than ID 1, then ID 1 should be last
@@ -716,26 +714,23 @@ class ListViewModelTest {
                 // Change sort option to Price Ascending
                 viewModel.setAction(ListingUiAction.OnSortChange(ListingSortOption.PriceAsc))
 
-                // view state update with sort option
-                assertEquals(ListingSortOption.PriceAsc, awaitItem().activeSort)
-
-                // Assert
-                val sortedList = awaitItem().listings
+                // Sort option and sorted list now update together in a single state emission
+                val sortedState = awaitItem()
+                assertEquals(ListingSortOption.PriceAsc, sortedState.activeSort)
                 assertEquals(
                     listingsTestData[1].id, // Listing on index 1 has lowest area and should be first
-                    sortedList[0].id
+                    sortedState.listings[0].id
                 ) // Listing with ID 2 has lower area and should be first
 
-                // Change sort option to Default
+                // Change sort option back to Default
                 viewModel.setAction(ListingUiAction.OnSortChange(ListingSortOption.Default))
-                // view state update with sort option
-                assertEquals(ListingSortOption.Default, awaitItem().activeSort)
 
-                // Assert
-                val defaultOrderList = awaitItem().listings
+                // Restored order and sort option update together in a single state emission
+                val defaultState = awaitItem()
+                assertEquals(ListingSortOption.Default, defaultState.activeSort)
                 assertEquals(
                     listingsTestData[0].id,
-                    defaultOrderList[0].id
+                    defaultState.listings[0].id
                 )
             }
         }

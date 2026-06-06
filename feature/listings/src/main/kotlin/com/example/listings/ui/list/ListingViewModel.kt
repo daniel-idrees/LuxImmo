@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
+@file:OptIn(FlowPreview::class)
 
 package com.example.listings.ui.list
 
@@ -17,7 +17,6 @@ import com.example.ui.mvi.MviViewModel
 import com.example.ui.resource.ResourceProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,7 +29,6 @@ import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.shareIn
@@ -46,6 +44,7 @@ internal class ListingViewModel @Inject constructor(
 ) : MviViewModel<ListingUiAction, ListingUiState, ListingUiEffect>() {
 
     private val syncStatus = MutableStateFlow<SyncStatus>(SyncStatus.NotStarted)
+    private val activeSort = MutableStateFlow(ListingSortOption.Default)
     private var refreshJob: Job? = null
 
     private fun initialise() {
@@ -73,7 +72,7 @@ internal class ListingViewModel @Inject constructor(
                 }
             }
 
-            is ListingUiAction.OnSortChange -> setState { copy(activeSort = event.newSort) }
+            is ListingUiAction.OnSortChange -> activeSort.value = event.newSort
             ListingUiAction.RemoveSelection -> setState { copy(selectedListing = null) }
         }
     }
@@ -111,27 +110,28 @@ internal class ListingViewModel @Inject constructor(
      * - Shows error effects only when cached data exists
      */
     private fun observeListingsAndSync() {
-        // keep a track on sort option in the view state
-        val sortOptionFlow = viewState
-            .mapLatest { it.activeSort }
-            .distinctUntilChanged()
-
         //keep a track on listings from use case and current sort option, then sort the list accordingly
         val sortedListingsFlow =
             getListingsUseCase()
                 .distinctUntilChanged()
-                .combine(sortOptionFlow) { listings, sortOption ->
-                    listings
+                .combine(activeSort) { listings, sortOption ->
+                    val sorted = listings
                         .map { it.toListingUi(resourceProvider = resourceProvider) }
                         .sortBy(sortOption)
+                    sorted to sortOption
                 }
                 .flowOn(defaultDispatcher)
 
         //keep a track on the final list and sync result
-        val combinedDataFlow = combine(sortedListingsFlow, syncStatus) { list, status ->
+        val combinedDataFlow = combine(sortedListingsFlow, syncStatus) { (list, sortOption), status ->
             val uiErrorConfig: UiErrorConfig? = calculateErrorConfig(listings = list, status = status)
 
-            ListingViewData(listings = list, syncStatus = status, uiErrorConfig = uiErrorConfig)
+            ListingViewData(
+                listings = list,
+                syncStatus = status,
+                uiErrorConfig = uiErrorConfig,
+                activeSort = sortOption
+            )
         }
             .onStart { refreshData() } // Start refreshing so that local storage can be updated
             .shareIn(      //sharing to prevent multiple executions
@@ -146,6 +146,7 @@ internal class ListingViewModel @Inject constructor(
                 setState {
                     copy(
                         listings = data.listings,
+                        activeSort = data.activeSort,
                         errorConfig = data.uiErrorConfig,
                         isRefreshing = data.syncStatus is SyncStatus.Running,
                         isLoading = data.listings.isEmpty() && data.syncStatus is SyncStatus.Running
@@ -166,7 +167,8 @@ internal class ListingViewModel @Inject constructor(
     private data class ListingViewData(
         val listings: List<ListingUi>,
         val syncStatus: SyncStatus,
-        val uiErrorConfig: UiErrorConfig?
+        val uiErrorConfig: UiErrorConfig?,
+        val activeSort: ListingSortOption
     )
 
     private fun calculateErrorConfig(
