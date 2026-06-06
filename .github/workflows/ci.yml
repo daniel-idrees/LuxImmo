@@ -1,0 +1,112 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    types: [ opened, reopened, synchronize ]
+    branches:
+      - main
+
+# Least-privilege token: this workflow only reads the repo and uploads artifacts.
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  main_project_module: app
+  # Baked into core:network BuildConfig.BASE_URL at configuration time, so it is
+  # needed by every job that compiles (lint/test/build). Optional: when unset it
+  # resolves to blank, which the app handles via demo mode.
+  BASE_URL: ${{ secrets.BASE_URL }}
+
+jobs:
+  linting:
+    name: Run Lint Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v5
+
+      - name: Setup Java and Gradle
+        uses: ./.github/actions/job-set-up
+
+      - name: Run Android Lint
+        run: ./gradlew lintDebug
+
+      - name: Upload Lint Report
+        # always() so the report is uploaded even when lint fails — which is
+        # exactly when it is most useful.
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-report
+          path: ${{ github.workspace }}/**/build/reports/lint-results-*.html
+          retention-days: 14
+
+  unit_test:
+    name: Unit Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v5
+
+      - name: Setup Java and Gradle
+        uses: ./.github/actions/job-set-up
+
+      - name: Run Unit Tests
+        run: ./gradlew testDebugUnitTest
+
+      - name: Upload Test Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-report
+          path: ${{ github.workspace }}/**/build/reports/tests/
+          retention-days: 14
+
+  build_and_upload:
+    name: Build and Upload
+    needs: [ linting, unit_test ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v5
+
+      - name: Setup Java and Gradle
+        uses: ./.github/actions/job-set-up
+
+      # Set Current Date As Env Variable
+      - name: Set current date as env variable
+        run: echo "date_today=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
+
+      # Set Repository Name As Env Variable
+      - name: Set repository name as env variable
+        run: echo "repository_name=$(echo '${{ github.repository }}' | awk -F '/' '{print $2}')" >> $GITHUB_ENV
+
+      # Create APK
+      - name: Build apk - ${{ env.main_project_module }} module
+        run: ./gradlew assembleDebug
+
+      # Upload Artifact Build
+      # Noted For Output [main_project_module]/build/outputs/apk/debug/
+      # PRs still assemble above (the real gate); only main produces a
+      # downloadable APK, so PRs don't generate throwaway artifacts.
+      - name: Upload APK - ${{ env.repository_name }}
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.date_today }} - ${{ env.repository_name }} - APK(s) dev debug generated
+          path: ${{ env.main_project_module }}/build/outputs/apk/debug/
+          retention-days: 14
