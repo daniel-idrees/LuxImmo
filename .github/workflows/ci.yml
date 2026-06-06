@@ -74,11 +74,63 @@ jobs:
           path: ${{ github.workspace }}/**/build/reports/tests/
           retention-days: 14
 
-  build_and_upload:
-    name: Build and Upload
+  ui_test:
+    name: UI Tests (Instrumented)
     needs: [ linting, unit_test ]
     runs-on: ubuntu-latest
+    timeout-minutes: 45
+    # main branch only: instrumented UI tests need an emulator and are slower and
+    # flakier than the JVM checks, so PRs stay gated on lint + unit tests and the
+    # full on-device suite runs once the change has landed on main.
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v5
+
+      - name: Setup Java and Gradle
+        uses: ./.github/actions/job-set-up
+
+      # The Android emulator needs KVM hardware acceleration to run at a usable
+      # speed on the ubuntu-latest runner.
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      # Boots an emulator, waits for it, then runs the connected (androidTest)
+      # suite. api-level must be >= the app's minSdk (24); 34 is a stable, widely
+      # cached system image and can be raised toward targetSdk (36) over time.
+      - name: Run Instrumented (UI) Tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          script: ./gradlew connectedDebugAndroidTest
+
+      - name: Upload Instrumented Test Report
+        # always() so the report is uploaded even when a UI test fails — which is
+        # exactly when it is most useful.
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: instrumented-test-report
+          path: ${{ github.workspace }}/**/build/reports/androidTests/
+          retention-days: 14
+
+  build_and_upload:
+    name: Build and Upload
+    needs: [ linting, unit_test, ui_test ]
+    runs-on: ubuntu-latest
     timeout-minutes: 30
+    # ui_test is in needs so a failing UI test on main blocks the APK. But ui_test
+    # is main-only and is skipped on PRs; a skipped dependency would normally skip
+    # this job too. This guard lets it still run when ui_test was skipped, while
+    # keeping it blocked if any dependency actually failed or the run was cancelled.
+    if: ${{ !cancelled() && !failure() }}
 
     steps:
       - name: Checkout the code
