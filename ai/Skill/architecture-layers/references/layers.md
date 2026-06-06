@@ -81,7 +81,7 @@ Reads flow out of the **database** (the single source of truth); the **network**
 
 ## Network-only (no offline-first) variant
 
-> Applies only when the skill-router preference `offline_first` is **`no`**. When it is `yes` (the default), ignore this section and use §4.2 + §4.4 as written.
+> Applies only when the app is **not** offline-first. When it is offline-first (the default), ignore this section and use §4.2 + §4.4 as written.
 
 When offline-first is disabled, the app fetches straight from the network with no local persistence. The domain (§4.1) and network (§4.3) layers are unchanged; the database and the offline-first machinery are removed:
 
@@ -117,7 +117,7 @@ internal class Network<Thing>Repository @Inject constructor(
 }
 ```
 
-> **Guardrail:** don't mix the two modes. If `offline_first` is `no`, there must be no Room/DAO/entity code and no `OfflineFirst*` repository; if it's `yes`, reads come from the DB and the network only refreshes the cache (§4.2). Switching modes is a deliberate, documented change to `.preferences.md`, not a per-file choice.
+> **Guardrail:** don't mix the two modes. When the app is **not** offline-first, there must be no Room/DAO/entity code and no `OfflineFirst*` repository; when it **is**, reads come from the DB and the network only refreshes the cache (§4.2). Switching modes is a deliberate, project-wide change, not a per-file choice.
 
 ## 4.5 UI core (`:core:ui`)
 

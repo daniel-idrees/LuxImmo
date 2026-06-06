@@ -1,6 +1,6 @@
 # Modularization — Multi-Module vs. Single-Module
 
-> Use when adding a module, wiring dependencies, checking the allowed dependency direction, or deciding how to structure a project. Which approach applies is set once by the skill-router preference `module_structure`.
+> Use when adding a module, wiring dependencies, checking the allowed dependency direction, or deciding how to structure a project. Which approach applies is decided once per project.
 
 Two ways to organize the same Clean Architecture (`ui → domain ← data`, offline-first, MVI):
 
@@ -37,7 +37,7 @@ Two ways to organize the same Clean Architecture (`ui → domain ← data`, offl
 - Only `:app` knows about every layer and assembles the graph.
 - `:core:ui` may depend on `:core:designsystem`; never the reverse.
 
-> **Offline-first toggle:** `:core:database` exists only when the skill-router preference `offline_first` is `yes`. When it is `no`, omit the `:core:database` module entirely and drop it from `:core:data`'s dependencies — `:core:data` then depends only on `:core:domain` and `:core:network`. See [`layers.md`](layers.md) → *Network-only (no offline-first) variant*.
+> **Offline-first toggle:** `:core:database` exists only when the app is offline-first. When it is **not**, omit the `:core:database` module entirely and drop it from `:core:data`'s dependencies — `:core:data` then depends only on `:core:domain` and `:core:network`. See [`layers.md`](layers.md) → *Network-only (no offline-first) variant*.
 
 **Why:** features can be built, tested, and reasoned about in isolation; swapping a data source never touches feature code; and the build system, not discipline, keeps the boundaries.
 
@@ -76,7 +76,7 @@ com.example.app
 - `data` depends on `domain`, `network`, `database`.
 - Only the `app` / `di` wiring knows about every package.
 
-> **Offline-first toggle:** the `data/database/` package (Room) exists only when the skill-router preference `offline_first` is `yes`. When it is `no`, omit it and use the network-only repository (`data` then uses only `domain` and `network`). See [`layers.md`](layers.md) → *Network-only (no offline-first) variant*.
+> **Offline-first toggle:** the `data/database/` package (Room) exists only when the app is offline-first. When it is **not**, omit it and use the network-only repository (`data` then uses only `domain` and `network`). See [`layers.md`](layers.md) → *Network-only (no offline-first) variant*.
 
 **Why:** the layering, single-source-of-truth, and MVI benefits are identical; you simply trade build-enforced isolation for a much simpler build setup.
 
