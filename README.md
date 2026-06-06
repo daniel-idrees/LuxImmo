@@ -93,15 +93,15 @@ Two macrobenchmarks measure the performance the user actually feels. Run them fr
 ## How to Build and Run
 
 1.  **Clone the Repository**
-2.  **Configure the Base URL**
-   
-This project requires a base URL for the network API to be specified.
-1. In the root directory of the project, create a file named local.properties if it doesn't already exist.
-2. Add the following line to the local.properties file:
-Properties
-BASE_URL=https://your.api.base.url/ {You know the base url ;)}
+2.  **Configure the Base URL (optional)**
 
-   
+* **Demo mode:** The app shows built-in demo data without a Base Url.
+* **Real backend:** Create a `local.properties` file in the project root and add:
+  ```properties
+  BASE_URL=https://your.api.base.url/ {You know the base url ;)}
+  ```
+  The app then loads live data instead of the demo data.
+
 #### Possible Enhancements
 - Better Place holder Image for listings with no image available. (https://github.com/daniel-idrees/LuxImmo/pull/1)
 - Different Detail page design

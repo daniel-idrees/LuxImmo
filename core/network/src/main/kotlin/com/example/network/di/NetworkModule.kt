@@ -1,12 +1,16 @@
 package com.example.network.di
 
+import android.content.Context
 import com.example.luximmo.core.network.BuildConfig
 import com.example.network.GslNetworkDataSource
+import com.example.network.demo.DemoAssetManager
+import com.example.network.demo.DemoGslNetworkDataSource
 import com.example.network.retrofit.RetrofitGslApiClient
 import com.example.network.retrofit.RetrofitGslNetworkApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.serialization.json.Json
 import okhttp3.Call
@@ -65,7 +69,29 @@ internal object NetworkModule {
 
     @Provides
     @Singleton
+    fun providesDemoAssetManager(
+        @ApplicationContext context: Context,
+    ): DemoAssetManager = DemoAssetManager(context.assets::open)
+
+    /**
+     * Provides the [GslNetworkDataSource] implementation used across the app.
+     *
+     * When [BuildConfig.BASE_URL] is blank (e.g. no `BASE_URL` is set in `local.properties`),
+     * the app falls back to [DemoGslNetworkDataSource], which serves bundled demo data from
+     * local JSON assets. Otherwise the Retrofit-backed [RetrofitGslApiClient] is used.
+     *
+     * Both implementations are wrapped in [dagger.Lazy] so the Retrofit client is never
+     * constructed with an empty base URL (which would throw at runtime).
+     */
+    @Provides
+    @Singleton
     fun provideGslNetworkDataSource(
-        network: RetrofitGslApiClient
-    ): GslNetworkDataSource = network
+        retrofitClient: dagger.Lazy<RetrofitGslApiClient>,
+        demoDataSource: dagger.Lazy<DemoGslNetworkDataSource>,
+    ): GslNetworkDataSource =
+        if (BuildConfig.BASE_URL.isBlank()) {
+            demoDataSource.get()
+        } else {
+            retrofitClient.get()
+        }
 }
