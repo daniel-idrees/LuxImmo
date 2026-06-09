@@ -115,7 +115,10 @@ internal fun ListingScreen(
                         }
                     }
                 }
-                items(viewState.listings) { listing ->
+                items(
+                    items = viewState.listings,
+                    key = { listing -> listing.id }
+                ) { listing ->
                     ListingDetailView(
                         modifier = Modifier
                             .fillMaxWidth()
