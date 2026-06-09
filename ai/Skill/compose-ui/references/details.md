@@ -9,6 +9,7 @@
 - Pull colors/typography from `MaterialTheme.colorScheme` / `MaterialTheme.typography`, themed by the design system.
 - Resolve user-facing strings with **`stringResource`** / **`pluralStringResource`** — never build them by concatenation. (ViewModels can't call `stringResource`, so they resolve user-facing strings via an injected `ResourceProvider` abstraction instead.)
 - Load remote/async images with **Coil 3** (`AsyncImage`), sized via design-system tokens, with placeholder and error fallbacks.
+- In `LazyColumn`/`LazyRow`, pass a **stable identity key** to `items(...)` (`key = { it.id }`) so Compose preserves item identity across reorders/insertions/removals — keeping scroll position, animations, and remembered item state, and skipping needless recomposition. Prefer the domain id; if the UI model has no single id, derive a stable composite from immutable fields (`key = { "${it.type}-${it.slug}" }`). Never key on the list index or anything mutable.
 - Provide **`@Preview`s** for every meaningful state (content, loading, empty, error). Use a custom multi-preview annotation (e.g. `@LightDarkPreviews`) to render light + dark at once.
 - Keep composables **stateless and side-effect-free** except for the thin stateful wrapper.
 
