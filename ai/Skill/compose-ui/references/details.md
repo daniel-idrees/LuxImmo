@@ -1,0 +1,16 @@
+# Compose UI Conventions
+
+> Use when writing screens, composables, previews, or UI test tags.
+
+- **Two composables per screen**: a stateful entry point that takes the `ViewModel` and collects state, and a `@VisibleForTesting` stateless one that takes `state` + `onAction: (Action) -> Unit`. Hoist all state; the stateless version is what previews and UI tests drive. *(Copy-paste skeleton in [`../template.md`](../template.md).)*
+- Collect state with **`collectAsStateWithLifecycle()`** (not `collectAsState()`).
+- Collect effects once in a `LaunchedEffect`, branching to navigation/snackbar handlers.
+- Drive spacing/sizing from **design-system tokens** (`SPACING_SMALL`, `SPACING_MEDIUM`, …) — no magic `dp` numbers scattered in features.
+- Pull colors/typography from `MaterialTheme.colorScheme` / `MaterialTheme.typography`, themed by the design system.
+- Resolve user-facing strings with **`stringResource`** / **`pluralStringResource`** — never build them by concatenation. (ViewModels can't call `stringResource`, so they resolve user-facing strings via an injected `ResourceProvider` abstraction instead.)
+- Load remote/async images with **Coil 3** (`AsyncImage`), sized via design-system tokens, with placeholder and error fallbacks.
+- In `LazyColumn`/`LazyRow`, pass a **stable identity key** to `items(...)` (`key = { it.id }`) so Compose preserves item identity across reorders/insertions/removals — keeping scroll position, animations, and remembered item state, and skipping needless recomposition. Prefer the domain id; if the UI model has no single id, derive a stable composite from immutable fields (`key = { "${it.type}-${it.slug}" }`). Never key on the list index or anything mutable.
+- Provide **`@Preview`s** for every meaningful state (content, loading, empty, error). Use a custom multi-preview annotation (e.g. `@LightDarkPreviews`) to render light + dark at once.
+- Keep composables **stateless and side-effect-free** except for the thin stateful wrapper.
+
+> **Guardrail:** every new screen ships with the full set — a stateful + stateless composable pair, `@Preview`s for *every* state (content, loading, empty, error) and typed error handling that distinguishes offline from unknown failures.
