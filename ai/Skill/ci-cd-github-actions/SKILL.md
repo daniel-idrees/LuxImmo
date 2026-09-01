@@ -19,3 +19,15 @@ The point of this skill is portability. The same pipeline shape works for any Gr
 ## Technical details
 
 The full anatomy of the workflow and the composite action — triggers, least-privilege permissions, concurrency, the four jobs (including the main-only UI-test job and the skipped-dependency guard on build-and-upload), artifact uploads, action version pinning, and the design decision behind each — lives in [`references/details.md`](references/details.md), together with the **regeneration checklist** of the exact values to change when copying it to another project and how to validate the result. A copy-paste skeleton for both files (`.github/workflows/ci.yml` and `.github/actions/job-set-up/action.yml`) with placeholders is in [`template.md`](template.md). A filled-in worked example — the same pipeline applied to a concrete app, plus the common variations (matrix builds, signed release, instrumented tests) — is in [`examples/android-app-ci.md`](examples/android-app-ci.md).
+
+## Fast generation (run the script, don't hand-write the YAML)
+
+To **regenerate the pipeline for a project**, run [`generate_ci.py`](generate_ci.py) instead of retyping ~200 lines of YAML — it stamps out both files with the per-project placeholders already substituted. It auto-detects the default branch (falling back to `main`), and `details.md` / `template.md` remain the source of truth for the reasoning.
+
+```bash
+python generate_ci.py --dry-run                                  # preview the two files
+python generate_ci.py --app-module app --variant Debug --jdk 17 --api-level 34 --secret BASE_URL
+python generate_ci.py --output ../other-repo --default-branch master   # target another repo
+```
+
+Flags: `--app-module`, `--default-branch` (auto-detected if omitted), `--variant`, `--jdk`, `--api-level` (must be ≥ the app's `minSdk`), `--secret` (omit if none), `--output`, `--force`, `--dry-run`. After running, review the result against the regeneration checklist in [`references/details.md`](references/details.md). Existing files are never overwritten without `--force`.

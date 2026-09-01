@@ -15,3 +15,17 @@ This skill describes how the app is organized into layers — the screens people
 ## Technical details
 
 The detailed responsibilities of each layer live in [`references/layers.md`](references/layers.md); the **MVI ViewModel pattern** (a ViewModel's State / Action / Effect contract) is in [`references/mvi.md`](references/mvi.md); and the end-to-end "adding a feature" checklist is in [`references/adding-a-feature.md`](references/adding-a-feature.md). How the app is split into Gradle modules (multi-module) or organized as packages in one module (single-module) — the full module/package breakdown and dependency rules for whichever structure the project uses — is in [`references/modularization.md`](references/modularization.md). The copy-paste code skeletons (`Result`, use case, the network DTO + data source + Retrofit API/client, offline-first repository, plus the MVI contracts + `MviViewModel` base + a screen's State/Action/Effect + ViewModel) are in [`template.md`](template.md). Generic worked examples (an "Articles" data + domain slice, its MVI screen contract, plus the same feature added end to end in multi- and single-module form) are in [`examples/`](examples/).
+
+## Fast scaffolding (run the script, don't hand-type the slice)
+
+When **adding a new feature**, run [`scaffold_feature.py`](scaffold_feature.py) first instead of writing the ~15 boilerplate files by hand — it stamps out the whole vertical slice (domain model/repository/use case, network DTO/data source/Retrofit API+client/DI module, Room entity+DAO, data mappers/repository impl/`@Binds` module, MVI contract/ViewModel/UI model, the Compose screen, and the feature `build.gradle.kts`), then you fill in the real fields and logic. It honours both project toggles — `--layout multi|single` and `--mode offline-first|network-only` — and is a faithful encoding of the references and [`template.md`](template.md), which remain the source of truth.
+
+```bash
+# Preview the file plan, then generate (offline-first, multi-module shown):
+python scaffold_feature.py --name listings --thing Property --package com.example --dry-run
+python scaffold_feature.py --name listings --thing Property --screen Properties --package com.example --id-type String
+# Network-only, single-module variant:
+python scaffold_feature.py --name search --thing Listing --layout single --mode network-only --app-module app
+```
+
+Generated files carry `TODO` markers and a `// --- project-internal types` import block to fix to the project's actual core packages (`Result`/`AppError`, `runSuspendCatching`, `MviViewModel`, `ResourceProvider`, etc.). Pass `--force` to overwrite, `--help` for all flags. Existing files are never overwritten without `--force`. Use this for a brand-new feature; for a single extra screen in an existing feature, the `compose-ui` skill's `scaffold_screen.py` is lighter.
